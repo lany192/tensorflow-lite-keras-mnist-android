@@ -1,12 +1,8 @@
-# Android MNIST With TFLite
-
 ## Python部分
 
 训练模型来源于TensorFlow的[basic_classification](https://www.tensorflow.org/tutorials/keras/basic_classification)示例，使用TensorFlow Keras API。
 
 为了能够更好的在Android手机上呈现并供用户测试，训练模型里使用MNIST，而非basic classification示例里的Fashion MNIST。
-
-本项目python源码位于根目录[python_code](https://github.com/Cyberwaif/AndroidMnistWithTFLite/tree/master/python_code)路径下。
 
 ```shell
 python keras_mnist_train.py
@@ -32,10 +28,6 @@ python eveluate.py keras_mnist_model.h5
 python convert.py keras_mnist_model.h5
 ```
 **注意：** 由于TensorFlow版本的持续更新，运行时可能会报`TFLiteConverter` Not Found等问题，建议使用TensorFlow Nightly，或者在[Google Colab](https://colab.research.google.com/)上进行。
-
-## Android部分
-
-UI逻辑来源于[MindOrks](https://github.com/MindorksOpenSource)的[AndroidTensorFlowMNISTExample](https://github.com/MindorksOpenSource/AndroidTensorFlowMNISTExample)
 
 核心代码就是以下一小段：
 

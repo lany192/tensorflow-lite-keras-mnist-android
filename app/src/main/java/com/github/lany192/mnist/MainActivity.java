@@ -112,7 +112,7 @@ public class MainActivity extends AppCompatActivity {
             Log.v(TAG, Arrays.toString(a));
         }
         String result = mTFLite.run(pixels);
-        String value = " Number is : " + result;
+        String value = "数字是: " + result;
         mResultText.setText(value);
     }
 

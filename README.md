@@ -2,7 +2,7 @@
 
 ## 模型的训练
 
-运行keras_mnist_tflite.py，得到keras_mnist_model.tflite模型文件
+运行python文件夹下的keras_mnist_tflite.py，生成H5模型文件，然后将h5模型转化成tflite模型，得到keras_mnist_model.tflite
 
 ## 使用模型
 

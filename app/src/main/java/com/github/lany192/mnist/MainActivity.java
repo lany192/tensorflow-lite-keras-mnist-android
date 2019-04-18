@@ -10,13 +10,10 @@ import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.nex3z.fingerpaintview.FingerPaintView;
 import com.tbruyelle.rxpermissions2.RxPermissions;
 
 import java.util.Arrays;
 import java.util.concurrent.Executors;
-
-import io.reactivex.functions.Consumer;
 
 public class MainActivity extends AppCompatActivity {
     private final String TAG = getClass().getSimpleName();
@@ -31,28 +28,13 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         fingerPaintView = findViewById(R.id.finger_paint_view);
         detectButton = findViewById(R.id.buttonDetect);
-        detectButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                onDetectClicked();
-            }
-        });
-        findViewById(R.id.buttonClear).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                onClearClicked();
-            }
-        });
+        detectButton.setOnClickListener(v -> onDetectClicked());
+        findViewById(R.id.buttonClear).setOnClickListener(v -> onClearClicked());
         mResultText = findViewById(R.id.textResult);
     }
 
     private void makeButtonVisible() {
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                detectButton.setVisibility(View.VISIBLE);
-            }
-        });
+        runOnUiThread(() -> detectButton.setVisibility(View.VISIBLE));
     }
 
     @SuppressLint("CheckResult")
@@ -62,26 +44,19 @@ public class MainActivity extends AppCompatActivity {
         new RxPermissions(this)
                 .request(Manifest.permission.READ_EXTERNAL_STORAGE,
                         Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                .subscribe(new Consumer<Boolean>() {
-
-                    @Override
-                    public void accept(Boolean granted) throws Exception {
-                        if (granted) {
-                            Executors.newSingleThreadExecutor().execute(new Runnable() {
-                                @Override
-                                public void run() {
-                                    try {
-                                        if (mTFLite == null)
-                                            mTFLite = new KerasTFLite(MainActivity.this);
-                                        makeButtonVisible();
-                                    } catch (final Exception e) {
-                                        throw new RuntimeException("Error initializing TensorFlow!", e);
-                                    }
-                                }
-                            });
-                        } else {
-                            Toast.makeText(MainActivity.this, "请授予存储权限", Toast.LENGTH_SHORT).show();
-                        }
+                .subscribe(granted -> {
+                    if (granted) {
+                        Executors.newSingleThreadExecutor().execute(() -> {
+                            try {
+                                if (mTFLite == null)
+                                    mTFLite = new KerasTFLite(MainActivity.this);
+                                makeButtonVisible();
+                            } catch (final Exception e) {
+                                throw new RuntimeException("Error initializing TensorFlow!", e);
+                            }
+                        });
+                    } else {
+                        Toast.makeText(MainActivity.this, "请授予存储权限", Toast.LENGTH_SHORT).show();
                     }
                 });
     }

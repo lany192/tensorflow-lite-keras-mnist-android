@@ -7,7 +7,7 @@
     android:padding="16dp"
     tools:context=".MainActivity">
 
-    <com.nex3z.fingerpaintview.FingerPaintView
+    <com.github.lany192.mnist.FingerPaintView
         android:id="@+id/finger_paint_view"
         android:layout_width="200dp"
         android:layout_height="200dp"

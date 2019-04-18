@@ -17,7 +17,7 @@ public class FingerPaintView extends View {
     private Path path;
     private Bitmap drawingBitmap;
     private Canvas drawingCanvas;
-    private Paint drawingPaint = new Paint(Paint.DITHER_FLAG);
+    private Paint drawingPaint;
     private float penX = 0.0f;
     private float penY = 0.0f;
     private Paint paint;
@@ -39,6 +39,7 @@ public class FingerPaintView extends View {
     }
 
     private void init() {
+        drawingPaint = new Paint(Paint.DITHER_FLAG);
         path = new Path();
         paint = new Paint();
         paint.setAntiAlias(true);

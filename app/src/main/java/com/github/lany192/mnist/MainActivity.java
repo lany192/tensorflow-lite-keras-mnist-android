@@ -78,7 +78,7 @@ public class MainActivity extends AppCompatActivity {
         }
         final int PIXEL_SIZE = 28;
         Bitmap bitmap = fingerPaintView.exportToBitmap(PIXEL_SIZE, PIXEL_SIZE);
-        float pixels[] = getPixelData(bitmap);
+        float[] pixels = getPixelData(bitmap);
         //should be same format with train
         for (int i = 0; i < pixels.length; i++) {
             pixels[i] = pixels[i] / 255;

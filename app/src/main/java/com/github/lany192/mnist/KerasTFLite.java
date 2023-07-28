@@ -17,7 +17,7 @@ import java.util.List;
 
 public class KerasTFLite {
     private static final String MODEL_FILE = "keras_mnist_model.tflite";
-    private Interpreter mInterpreter;
+    private final Interpreter mInterpreter;
 
     public KerasTFLite(Context context) throws IOException {
         File file = loadModelFile(context);

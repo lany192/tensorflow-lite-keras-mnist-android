@@ -1,0 +1,74 @@
+[versions]
+activity = "1.9.2"
+agp = "8.7.3"
+android-compile-sdk = "35" # 编译版本
+android-min-sdk = "23" # 最小版本
+android-target-sdk = "30"# 目标版本
+annotation = "1.8.2"
+appcompat = "1.7.0"
+brvah = "4.1.4" #适配器 https://github.com/CymChad/BaseRecyclerViewAdapterHelper
+constraintlayout = "2.1.4"
+coreKtx = "1.13.1"
+coroutines = "1.9.0" #协程 https://github.com/Kotlin/kotlinx.coroutines
+exifinterface = "1.3.7"
+fragment = "1.8.4"
+hilt = "2.53.1" #注入依赖 https://dagger.dev/hilt/
+immersionbar = "3.2.2" #状态栏工具 https://github.com/gyf-dev/ImmersionBar
+kotlin = "2.1.0"
+ksp = "2.1.0-1.0.29" # https://github.com/google/ksp/releases
+lifecycle = "2.8.6"
+material = "1.12.0"
+mmkv = "2.0.1" #存储 https://github.com/Tencent/MMKV
+multidex = "2.0.1"
+permissions = "20.0" #权限 https://github.com/getActivity/XXPermissions
+recyclerview = "1.3.2"
+rxandroid = "3.0.2" #https://github.com/ReactiveX/RxAndroid
+rxjava = "3.1.8" #https://github.com/ReactiveX/RxJava
+tensorflow-lite = "2.16.1"
+toaster = "12.6" #Toast工具 https://github.com/getActivity/Toaster
+viewpager2 = "1.1.0"
+
+[libraries]
+androidx-activity = { module = "androidx.activity:activity", version.ref = "activity" }
+androidx-activity-ktx = { module = "androidx.activity:activity-ktx", version.ref = "activity" }
+androidx-annotation = { module = "androidx.annotation:annotation", version.ref = "annotation" }
+androidx-appcompat = { module = "androidx.appcompat:appcompat", version.ref = "appcompat" }
+androidx-constraintlayout = { module = "androidx.constraintlayout:constraintlayout", version.ref = "constraintlayout" }
+androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtx" }
+androidx-exifinterface = { module = "androidx.exifinterface:exifinterface", version.ref = "exifinterface" }
+androidx-fragment = { module = "androidx.fragment:fragment", version.ref = "fragment" }
+androidx-fragment-ktx = { module = "androidx.fragment:fragment-ktx", version.ref = "fragment" }
+androidx-lifecycle-livedata-ktx = { module = "androidx.lifecycle:lifecycle-livedata-ktx", version.ref = "lifecycle" }
+androidx-lifecycle-viewmodel-ktx = { module = "androidx.lifecycle:lifecycle-viewmodel-ktx", version.ref = "lifecycle" }
+androidx-material = { module = "com.google.android.material:material", version.ref = "material" }
+androidx-multidex = { module = "androidx.multidex:multidex", version.ref = "multidex" }
+androidx-recyclerview = { module = "androidx.recyclerview:recyclerview", version.ref = "recyclerview" }
+androidx-viewpager2 = { module = "androidx.viewpager2:viewpager2", version.ref = "viewpager2" }
+
+
+brvah = { module = "io.github.cymchad:BaseRecyclerViewAdapterHelper4", version.ref = "brvah" }
+coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "coroutines" }
+coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
+immersionbar = { module = "com.geyifeng.immersionbar:immersionbar", version.ref = "immersionbar" }
+
+
+permissions = { module = "com.github.getActivity:XXPermissions", version.ref = "permissions" }
+rxandroid = { module = "io.reactivex.rxjava3:rxandroid", version.ref = "rxandroid" }
+rxjava = { module = "io.reactivex.rxjava3:rxjava", version.ref = "rxjava" }
+tencent-mmkv = { module = "com.tencent:mmkv", version.ref = "mmkv" }
+
+tensorflow-lite = { module = "org.tensorflow:tensorflow-lite", version.ref = "tensorflow-lite" }
+toaster = { module = "com.github.getActivity:Toaster", version.ref = "toaster" }
+
+
+[plugins]
+android-application = { id = "com.android.application", version.ref = "agp" }
+android-library = { id = "com.android.library", version.ref = "agp" }
+google-ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+hilt-android = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
+kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+kotlin-kapt = { id = "org.jetbrains.kotlin.kapt", version.ref = "kotlin" }
+kotlin-parcelize = { id = "org.jetbrains.kotlin.plugin.parcelize", version.ref = "kotlin" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+

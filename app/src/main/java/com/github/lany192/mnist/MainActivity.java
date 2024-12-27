@@ -9,11 +9,14 @@ import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.tbruyelle.rxpermissions2.RxPermissions;
+import com.hjq.permissions.OnPermissionCallback;
+import com.hjq.permissions.XXPermissions;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.Executors;
 
 public class MainActivity extends AppCompatActivity {
@@ -42,11 +45,13 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        new RxPermissions(this)
-                .request(Manifest.permission.READ_EXTERNAL_STORAGE,
+        XXPermissions.with(this)
+                .permission(Manifest.permission.READ_EXTERNAL_STORAGE,
                         Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                .subscribe(granted -> {
-                    if (granted) {
+                .request(new OnPermissionCallback() {
+
+                    @Override
+                    public void onGranted(@NonNull List<String> permissions, boolean allGranted) {
                         Executors.newSingleThreadExecutor().execute(() -> {
                             try {
                                 if (mTFLite == null)
@@ -56,7 +61,10 @@ public class MainActivity extends AppCompatActivity {
                                 throw new RuntimeException("Error initializing TensorFlow!", e);
                             }
                         });
-                    } else {
+                    }
+
+                    @Override
+                    public void onDenied(@NonNull List<String> permissions, boolean doNotAskAgain) {
                         Toast.makeText(MainActivity.this, "请授予存储权限", Toast.LENGTH_SHORT).show();
                     }
                 });

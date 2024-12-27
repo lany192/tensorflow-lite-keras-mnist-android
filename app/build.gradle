@@ -1,11 +1,19 @@
-apply plugin: 'com.android.application'
+plugins {
+    alias(libs.plugins.android.application)
+    alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.kotlin.kapt)
+    alias(libs.plugins.google.ksp)
+    alias(libs.plugins.kotlin.parcelize)
+}
 
 android {
-    compileSdkVersion 28
+    namespace "com.github.lany192.mnist"
+    compileSdk Integer.parseInt(libs.versions.android.compile.sdk.get())
+
     defaultConfig {
         applicationId "com.github.lany192.mnist"
-        minSdkVersion 16
-        targetSdkVersion 28
+        minSdk Integer.parseInt(libs.versions.android.min.sdk.get())
+        targetSdk Integer.parseInt(libs.versions.android.target.sdk.get())
         versionCode 1
         versionName "1.0"
     }
@@ -16,15 +24,46 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility = '1.8'
-        targetCompatibility = '1.8'
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
+    }
+    kotlinOptions {
+        jvmTarget = "11"
+    }
+    buildFeatures {
+        viewBinding true
     }
 }
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
-    implementation 'androidx.appcompat:appcompat:1.2.0'
     implementation 'org.tensorflow:tensorflow-lite:2.3.0'
-    implementation 'com.github.tbruyelle:rxpermissions:0.10.2'
-    implementation 'io.reactivex.rxjava2:rxjava:2.2.8'
+//    implementation 'com.github.tbruyelle:rxpermissions:0.10.2'
+    implementation libs.androidx.annotation
+    implementation libs.androidx.appcompat
+    implementation libs.androidx.activity
+    implementation libs.androidx.activity.ktx
+    implementation libs.androidx.fragment
+    implementation libs.androidx.fragment.ktx
+    implementation libs.androidx.core.ktx
+    implementation libs.androidx.lifecycle.livedata.ktx
+    implementation libs.androidx.lifecycle.viewmodel.ktx
+    implementation libs.androidx.recyclerview
+    implementation libs.androidx.constraintlayout
+    implementation libs.androidx.multidex
+    implementation libs.androidx.material
+    implementation libs.androidx.exifinterface
+
+    implementation libs.androidx.viewpager2
+
+    implementation libs.coroutines.core
+    implementation libs.coroutines.android
+
+    implementation libs.toaster
+    implementation libs.brvah
+    implementation libs.immersionbar
+    implementation libs.tencent.mmkv
+    implementation libs.rxjava
+    implementation libs.rxandroid
+    implementation libs.permissions
 }

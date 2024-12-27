@@ -1,7 +1,5 @@
 package com.github.lany192.mnist;
 
-import android.Manifest;
-import android.annotation.SuppressLint;
 import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.util.Log;
@@ -9,15 +7,9 @@ import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.hjq.permissions.OnPermissionCallback;
-import com.hjq.permissions.XXPermissions;
-
 import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.Executors;
 
 public class MainActivity extends AppCompatActivity {
     private final String TAG = getClass().getSimpleName();
@@ -35,39 +27,16 @@ public class MainActivity extends AppCompatActivity {
         detectButton.setOnClickListener(v -> onDetectClicked());
         findViewById(R.id.buttonClear).setOnClickListener(v -> onClearClicked());
         mResultText = findViewById(R.id.textResult);
+        try {
+            mTFLite = new KerasTFLite(MainActivity.this);
+            makeButtonVisible();
+        } catch (final Exception e) {
+            throw new RuntimeException("Error initializing TensorFlow!", e);
+        }
     }
 
     private void makeButtonVisible() {
         runOnUiThread(() -> detectButton.setVisibility(View.VISIBLE));
-    }
-
-    @SuppressLint("CheckResult")
-    @Override
-    protected void onResume() {
-        super.onResume();
-        XXPermissions.with(this)
-                .permission(Manifest.permission.READ_EXTERNAL_STORAGE,
-                        Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                .request(new OnPermissionCallback() {
-
-                    @Override
-                    public void onGranted(@NonNull List<String> permissions, boolean allGranted) {
-                        Executors.newSingleThreadExecutor().execute(() -> {
-                            try {
-                                if (mTFLite == null)
-                                    mTFLite = new KerasTFLite(MainActivity.this);
-                                makeButtonVisible();
-                            } catch (final Exception e) {
-                                throw new RuntimeException("Error initializing TensorFlow!", e);
-                            }
-                        });
-                    }
-
-                    @Override
-                    public void onDenied(@NonNull List<String> permissions, boolean doNotAskAgain) {
-                        Toast.makeText(MainActivity.this, "请授予存储权限", Toast.LENGTH_SHORT).show();
-                    }
-                });
     }
 
     @Override

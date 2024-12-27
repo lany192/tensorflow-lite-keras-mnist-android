@@ -2,7 +2,6 @@ package com.github.lany192.mnist;
 
 import android.content.Context;
 import android.content.res.AssetManager;
-import android.os.Environment;
 
 import org.tensorflow.lite.Interpreter;
 
@@ -16,7 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class KerasTFLite {
-    private static final String MODEL_FILE = "keras_mnist_model.tflite";
+    private static final String MODEL_FILE = "model.tflite";
     private Interpreter mInterpreter;
 
     public KerasTFLite(Context context) throws IOException {
@@ -36,7 +35,7 @@ public class KerasTFLite {
     }
 
     private File loadModelFile(Context context) throws IOException {
-        String filePath = Environment.getExternalStorageDirectory() + File.separator + MODEL_FILE;
+        String filePath = context.getFilesDir() + File.separator + MODEL_FILE;
         File file = new File(filePath);
         if (!file.exists()) {
             AssetManager assetManager = context.getAssets();

@@ -37,33 +37,13 @@ android {
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
-    implementation 'org.tensorflow:tensorflow-lite:2.3.0'
-//    implementation 'com.github.tbruyelle:rxpermissions:0.10.2'
-    implementation libs.androidx.annotation
+    implementation libs.tensorflow.lite
     implementation libs.androidx.appcompat
-    implementation libs.androidx.activity
-    implementation libs.androidx.activity.ktx
-    implementation libs.androidx.fragment
-    implementation libs.androidx.fragment.ktx
-    implementation libs.androidx.core.ktx
-    implementation libs.androidx.lifecycle.livedata.ktx
-    implementation libs.androidx.lifecycle.viewmodel.ktx
     implementation libs.androidx.recyclerview
     implementation libs.androidx.constraintlayout
     implementation libs.androidx.multidex
     implementation libs.androidx.material
-    implementation libs.androidx.exifinterface
-
-    implementation libs.androidx.viewpager2
-
     implementation libs.coroutines.core
     implementation libs.coroutines.android
-
     implementation libs.toaster
-    implementation libs.brvah
-    implementation libs.immersionbar
-    implementation libs.tencent.mmkv
-    implementation libs.rxjava
-    implementation libs.rxandroid
-    implementation libs.permissions
 }

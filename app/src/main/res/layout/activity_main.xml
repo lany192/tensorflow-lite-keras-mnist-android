@@ -5,6 +5,7 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:padding="10dp"
+    android:background="#dddddd"
     tools:context=".MainActivity">
 
     <com.github.lany192.mnist.FingerPaintView
@@ -12,7 +13,7 @@
         android:layout_width="match_parent"
         android:layout_height="300dp"
         android:layout_gravity="center"
-        android:background="#dddddd" />
+        android:background="#ffffff" />
 
     <TextView
         android:id="@+id/textResult"

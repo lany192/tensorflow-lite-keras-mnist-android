@@ -36,7 +36,7 @@ class FingerPaintView @JvmOverloads constructor(
         paint!!.style = Paint.Style.STROKE
         paint!!.strokeCap = Paint.Cap.ROUND
         paint!!.strokeJoin = Paint.Join.ROUND
-        paint!!.strokeWidth = 36f
+        paint!!.strokeWidth = 64f
     }
 
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
@@ -101,18 +101,15 @@ class FingerPaintView @JvmOverloads constructor(
         invalidate()
     }
 
-    fun exportToBitmap(width: Int, height: Int): Bitmap {
+    /**
+     * 导出笔画内容用于识别：纯白背景、原始分辨率。
+     * 不能带入视图背景色，也不能缩放，否则预处理（裁剪/宽高比）失效。
+     */
+    fun exportDrawingBitmap(): Bitmap {
         val rawBitmap = Bitmap.createBitmap(getWidth(), getHeight(), Bitmap.Config.ARGB_8888)
         val canvas = Canvas(rawBitmap)
-        val bgDrawable = background
-        if (bgDrawable != null) {
-            bgDrawable.draw(canvas)
-        } else {
-            canvas.drawColor(Color.WHITE)
-        }
+        canvas.drawColor(Color.WHITE)
         draw(canvas)
-        val scaledBitmap = Bitmap.createScaledBitmap(rawBitmap, width, height, false)
-        rawBitmap.recycle()
-        return scaledBitmap
+        return rawBitmap
     }
 }

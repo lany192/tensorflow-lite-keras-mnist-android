@@ -16,10 +16,10 @@ Two-part project for handwritten digit (MNIST) recognition:
 
 ## Gotchas
 
-- Model filename inconsistency: `KerasTFLite.kt` loads `assets/keras_mnist_model.tflite`, but the assets folder (and the Python script output) uses `model.tflite`. When adding/updating a model, make the names consistent or the app crashes on load.
-- Inference input must match training format: 28×28 float array, normalized to 0–1, inverted (drawn stroke = 1.0, background = 0.0) — see `MainActivity.getPixelData`.
+- Model is a CNN with input shape [1, 28, 28, 1] (float 0–1, ink = 1.0, background = 0.0); `KerasTFLite.kt` wraps the flat 784-float array. Android-side preprocessing in `MainActivity.preprocess` must stay MNIST-style: bbox crop → scale to 20px → intensity normalize → center-of-mass centering. `FingerPaintView.exportDrawingBitmap` must export pure white background at native resolution — never draw the view's background color into the export, or the ink threshold and aspect ratio break.
 - Maven repos in `settings.gradle.kts` use Aliyun mirrors — do not remove; required for network access in China.
-- Gradle daemon JVM toolchain is pinned to version 25 in `gradle/gradle-daemon-jvm.properties` (auto-provisioned on build).
+- Gradle daemon JVM toolchain is pinned to version 21 in `gradle/gradle-daemon-jvm.properties` (auto-provisioned on build).
+- The venv's pip can break after partial upgrades; repair with `https://bootstrap.pypa.io/pip/3.9/get-pip.py` (venv is Python 3.9).
 
 ## Conventions
 

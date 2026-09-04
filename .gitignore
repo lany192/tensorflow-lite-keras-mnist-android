@@ -7,3 +7,5 @@
 /captures
 .externalNativeBuild
 .kotlin
+/.*
+/python/venv

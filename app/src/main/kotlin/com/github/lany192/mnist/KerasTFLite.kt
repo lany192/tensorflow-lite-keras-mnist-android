@@ -16,15 +16,23 @@ class KerasTFLite(context: Context) {
         mInterpreter = Interpreter(file)
     }
 
-    fun run(input: FloatArray?): String? {
-        if (input == null || input.size != MODEL_SIZE * MODEL_SIZE) return null
+    /**
+     * 识别单个数字，返回 0~9 的预测下标；[input] 为空或长度不为 784 时返回 -1。
+     */
+    fun classify(input: FloatArray?): Int {
+        if (input == null || input.size != MODEL_SIZE * MODEL_SIZE) return -1
         val input4d = Array(1) { Array(MODEL_SIZE) { Array(MODEL_SIZE) { FloatArray(1) } } }
         for (i in input.indices) {
             input4d[0][i / MODEL_SIZE][i % MODEL_SIZE][0] = input[i]
         }
         val output = Array(1) { FloatArray(10) }
         mInterpreter.run(input4d, output)
-        return getMax(output[0]).toString()
+        return getMax(output[0])
+    }
+
+    fun run(input: FloatArray?): String? {
+        val digit = classify(input)
+        return if (digit >= 0) digit.toString() else null
     }
 
     @Throws(IOException::class)

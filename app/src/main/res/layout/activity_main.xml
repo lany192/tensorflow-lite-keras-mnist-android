@@ -16,13 +16,39 @@
         android:background="#ffffff" />
 
     <TextView
+        android:id="@+id/textHint"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:gravity="center"
+        android:textColor="#666666"
+        android:textSize="12sp"
+        tools:text="请从左到右依次书写，数字之间留出空隙" />
+
+    <TextView
         android:id="@+id/textResult"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:gravity="center"
+        android:textSize="28sp"
+        android:textStyle="bold"
+        tools:text="识别结果：1234" />
+
+    <TextView
+        android:id="@+id/textDetail"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:gravity="center"
+        android:textColor="#666666"
+        android:textSize="14sp"
+        tools:text="共 4 位：1 2 3 4" />
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
         android:gravity="center_horizontal"
         android:orientation="horizontal">
 
@@ -30,15 +56,14 @@
             android:id="@+id/buttonClear"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="清除" />
+            android:text="@string/action_clear" />
 
         <Button
             android:id="@+id/buttonDetect"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginLeft="8dp"
-            android:text="识别"
-            android:visibility="invisible" />
+            android:text="@string/action_detect" />
     </LinearLayout>
 
 

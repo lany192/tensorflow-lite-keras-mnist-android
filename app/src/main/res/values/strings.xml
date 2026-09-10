@@ -1,3 +1,11 @@
 <resources>
     <string name="app_name">MnistTFLite</string>
+    <string name="action_clear">清除</string>
+    <string name="action_detect">识别</string>
+    <string name="hint_write">请从左到右依次书写：每位尽量写大（高度接近画布），数字之间留出空隙，最多 %1$d 位</string>
+    <string name="result_format">识别结果：%1$s</string>
+    <string name="digit_detail_format">共 %1$d 位：%2$s</string>
+    <string name="toast_empty">请先写一个数字</string>
+    <string name="toast_no_ink">没检测到有效笔画，请写大一点</string>
+    <string name="toast_too_many">位数太多，只识别前 %1$d 位；请写大一些并减少位数</string>
 </resources>

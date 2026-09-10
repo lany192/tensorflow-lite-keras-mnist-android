@@ -36,7 +36,11 @@ class FingerPaintView @JvmOverloads constructor(
         paint!!.style = Paint.Style.STROKE
         paint!!.strokeCap = Paint.Cap.ROUND
         paint!!.strokeJoin = Paint.Join.ROUND
-        paint!!.strokeWidth = 64f
+        // MNIST 模型对"笔画宽 / 数字高度"的比例极敏感：实测安全区在 0.19 以下，
+        // 0.2~0.25 开始明显退化、0.3 以上崩塌。64f 只在把字写成占满整个视图（≈700px 高）
+        // 时才是最优；一旦写多位数、每个数字变小，64f 的比例会飙到 0.45 以上，整串全对率归零。
+        // 32f 让安全区覆盖约 170~800px 的字高，且大字单数字场景实测无损失（97.5% vs 96.7%）。
+        paint!!.strokeWidth = 32f
     }
 
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {

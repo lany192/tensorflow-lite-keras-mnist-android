@@ -64,6 +64,13 @@
             android:layout_height="wrap_content"
             android:layout_marginLeft="8dp"
             android:text="@string/action_detect" />
+
+        <Button
+            android:id="@+id/buttonMathPractice"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="8dp"
+            android:text="@string/action_math_practice" />
     </LinearLayout>
 
 

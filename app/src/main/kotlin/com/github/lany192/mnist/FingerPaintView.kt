@@ -26,6 +26,14 @@ class FingerPaintView @JvmOverloads constructor(
     var isEmpty: Boolean = true
         private set
 
+    /**
+     * 是否接受手写输入。练习页在"待确认"阶段要冻结画布，好让判定的是学生刚刚看到并确认的那个数。
+     *
+     * 不能用 `setEnabled(false)`：本 View 无条件 override 了 onTouchEvent 且恒返回 true，
+     * 标准 View 的 enabled 拦截在这里不起作用。
+     */
+    var inputEnabled: Boolean = true
+
     init {
         drawingPaint = Paint(Paint.DITHER_FLAG)
         path = Path()
@@ -57,6 +65,7 @@ class FingerPaintView @JvmOverloads constructor(
 
     override fun onTouchEvent(event: MotionEvent?): Boolean {
         if (event == null) return false
+        if (!inputEnabled) return true
         isEmpty = false
         val x = event.x
         val y = event.y
@@ -95,12 +104,13 @@ class FingerPaintView @JvmOverloads constructor(
 
     fun clear() {
         path!!.reset()
-        drawingBitmap = Bitmap.createBitmap(
-            drawingBitmap!!.getWidth(),
-            drawingBitmap!!.getHeight(),
-            Bitmap.Config.ARGB_8888
-        )
-        drawingCanvas = Canvas(drawingBitmap!!)
+        // 位图由 onSizeChanged 创建，视图尚未测量布局时（例如 Activity.onCreate 里就要清空画布）
+        // 它还是 null。那时画布本来就是空的，只需重置状态 —— onSizeChanged 随后会建出空位图。
+        val bitmap = drawingBitmap
+        if (bitmap != null) {
+            drawingBitmap = Bitmap.createBitmap(bitmap.width, bitmap.height, Bitmap.Config.ARGB_8888)
+            drawingCanvas = Canvas(drawingBitmap!!)
+        }
         isEmpty = true
         invalidate()
     }

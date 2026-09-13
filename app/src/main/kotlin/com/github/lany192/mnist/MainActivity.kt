@@ -1,5 +1,7 @@
 package com.github.lany192.mnist
 
+
+import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -17,6 +19,9 @@ class MainActivity : AppCompatActivity() {
         binding.textHint.text = getString(R.string.hint_write, MAX_DIGITS)
         binding.buttonDetect.setOnClickListener { onDetectClicked() }
         binding.buttonClear.setOnClickListener { onClearClicked() }
+        binding.buttonMathPractice.setOnClickListener {
+            startActivity(Intent(this, MathPracticeActivity::class.java))
+        }
         val tflite = KerasTFLite(this)
         mTFLite = tflite
         mRecognizer = MnistRecognizer(tflite)

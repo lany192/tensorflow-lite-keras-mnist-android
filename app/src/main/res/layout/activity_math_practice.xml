@@ -1,0 +1,206 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="10dp"
+    android:background="#dddddd"
+    tools:context=".MathPracticeActivity">
+
+    <!-- 年级选择与进度：结束态也保留，方便学生直接换年级重开 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/math_grade_label" />
+
+        <!-- 标签由 entries 声明式绑定，顺序必须与 Grade 枚举一致 -->
+        <Spinner
+            android:id="@+id/spinnerGrade"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="4dp"
+            android:entries="@array/grade_names" />
+
+        <TextView
+            android:id="@+id/textProgress"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="end"
+            android:textSize="16sp"
+            tools:text="第 3/10 题" />
+    </LinearLayout>
+
+    <!-- 作答区：结算后整组隐藏 -->
+    <LinearLayout
+        android:id="@+id/groupQuestion"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/textExpression"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:gravity="center"
+            android:textSize="40sp"
+            android:textStyle="bold"
+            tools:text="23 + 45 = ?" />
+
+        <!-- 高度用 weight 吃掉剩余空间，而不是像 activity_main 那样写死 300dp：
+             识别精度由「笔画宽 / 数字高」的比例决定（安全区 ≤0.19），画布越高越容易写进安全区 -->
+        <com.github.lany192.mnist.FingerPaintView
+            android:id="@+id/fingerPaintView"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_marginTop="8dp"
+            android:layout_weight="1"
+            android:background="#ffffff"
+            android:minHeight="160dp" />
+
+        <!-- 必须是 invisible 而不是 gone：画布是 weight=1 撑满剩余空间的，这行若用 gone 占位为 0，
+             它一出现就会把画布挤矮，触发 FingerPaintView.onSizeChanged 重建位图、清空学生刚写的字迹，
+             学生会以为"提交把答案吃掉了"。invisible 保留行高，画布尺寸恒定。 -->
+        <TextView
+            android:id="@+id/textCheckHint"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:gravity="center"
+            android:text="@string/math_check_hint"
+            android:textColor="#666666"
+            android:textSize="12sp"
+            android:visibility="invisible" />
+
+        <TextView
+            android:id="@+id/textHint"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:gravity="center"
+            android:text="@string/math_hint_write"
+            android:textColor="#666666"
+            android:textSize="12sp" />
+
+        <TextView
+            android:id="@+id/textFeedback"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:gravity="center"
+            android:textSize="28sp"
+            android:textStyle="bold"
+            tools:text="识别结果：68" />
+
+        <TextView
+            android:id="@+id/textDetail"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:gravity="center"
+            android:textColor="#666666"
+            android:textSize="14sp"
+            tools:text="共 2 位：6 8" />
+    </LinearLayout>
+
+    <!-- 结算区：仅最后一题判定完毕后显示 -->
+    <LinearLayout
+        android:id="@+id/groupResult"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:visibility="gone">
+
+        <TextView
+            android:id="@+id/textSummary"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:textSize="28sp"
+            android:textStyle="bold"
+            tools:text="答对 7 / 10 题" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="@string/math_review_title"
+            android:textSize="16sp" />
+
+        <!-- 最多 10 行错题，必须可滚动，否则小屏上按钮会被挤出屏幕 -->
+        <ScrollView
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1">
+
+            <TextView
+                android:id="@+id/textReview"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textSize="16sp"
+                tools:text="第 2 题：23 + 45 = 68，你写的是 96" />
+        </ScrollView>
+    </LinearLayout>
+
+    <!-- 按钮行：五个按钮按状态显示其中两个 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:gravity="center_horizontal"
+        android:orientation="horizontal">
+
+        <Button
+            android:id="@+id/buttonClear"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/action_clear" />
+
+        <Button
+            android:id="@+id/buttonSubmit"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="8dp"
+            android:text="@string/math_action_submit" />
+
+        <Button
+            android:id="@+id/buttonRewrite"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/math_action_rewrite"
+            android:visibility="gone" />
+
+        <Button
+            android:id="@+id/buttonConfirm"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="8dp"
+            android:text="@string/math_action_confirm"
+            android:visibility="gone" />
+
+        <Button
+            android:id="@+id/buttonNext"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/math_action_next"
+            android:visibility="gone" />
+
+        <Button
+            android:id="@+id/buttonNextSet"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/math_action_next_set"
+            android:visibility="gone" />
+    </LinearLayout>
+
+</LinearLayout>

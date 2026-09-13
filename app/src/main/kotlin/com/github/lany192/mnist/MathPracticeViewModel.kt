@@ -1,6 +1,7 @@
 package com.github.lany192.mnist
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -34,6 +35,12 @@ class MathPracticeViewModel(
      */
     private val generate: (Grade) -> List<Problem> = { MathProblemGenerator.generateSet(it) },
     private val maxDigits: Int = MAX_RECOGNIZED_DIGITS,
+    /**
+     * 练习归档端口。
+     *
+     * 新增参数**一律要给默认值**：现有测试用的是具名参数构造，去掉默认值会让它们直接编译失败。
+     */
+    private val recorder: PracticeRecorder = PracticeRecorder.NoOp,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(MathPracticeState(problems = generate(Grade.FIRST)))
@@ -44,14 +51,24 @@ class MathPracticeViewModel(
     val effect: Flow<MathPracticeEffect> = _effect.receiveAsFlow()
 
     fun dispatch(intent: MathPracticeIntent) {
-        val (next, effects) = reduce(intent)
+        val (next, effects, archive) = reduce(intent)
+        // 先落状态：结算页不等待任何 I/O
         _state.value = next
         effects.forEach { _effect.trySend(it) }
+        // 再交付归档。不挂起、不返回 —— 实现在内部把真正的写库交给应用级作用域，
+        // 所以结算瞬间旋转屏幕也不会丢掉这次记录。放在 Activity 的 lifecycleScope 里就会：
+        // 协程被取消、而 Effect 已经消费不会重发，结果是页面正常、数据没写、毫无报错。
+        archive?.let(recorder::record)
     }
 
     private data class Transition(
         val state: MathPracticeState,
         val effects: List<MathPracticeEffect> = emptyList(),
+        /**
+         * 需要归档的一次练习。[reduce] 只**产出**它、不执行 —— 这样 reduce 依然是纯函数，
+         * 将来要把它整体搬成纯函数也还是机械操作。
+         */
+        val archive: PracticeArchive? = null,
     )
 
     private fun reduce(intent: MathPracticeIntent): Transition {
@@ -59,10 +76,26 @@ class MathPracticeViewModel(
         return when (intent) {
             // 同年级不动：Spinner 首次布局会用 position=0 回调一次，render 回写 selection 时也会
             // 回调。这道闸门是防 render→dispatch→render 回环的关键，不能省。
+            // 但重做态下选年级意味着"退出重做、回到按年级出题"，所以那时即使同年级也要重建。
             is MathPracticeIntent.SelectGrade ->
-                if (intent.grade == current.grade) Transition(current) else newSet(intent.grade)
+                if (intent.grade == current.grade && !current.isReviewing) {
+                    Transition(current)
+                } else {
+                    newSet(intent.grade)
+                }
 
-            MathPracticeIntent.StartNewSet -> newSet(current.grade)
+            // 重做态下「再来一组」= 重跑同一批错题，不退回按年级出题
+            MathPracticeIntent.StartNewSet ->
+                if (current.isReviewing) restartReview(current) else newSet(current.grade)
+
+            // 来自跨页 Intent 的灌注。已是重做态说明 Activity 被重建（旋转），必须幂等 ——
+            // 否则学生的重做进度会被重置。
+            is MathPracticeIntent.StartReview ->
+                if (current.isReviewing) Transition(current) else beginReview(current, intent.problems)
+
+            // 来自结算页的按钮，每次点击都要生效（包括重做之后再重做）
+            MathPracticeIntent.ReviewCurrentMistakes ->
+                beginReview(current, current.wrongAttempts.map { it.problem })
 
             // 非对应阶段收到这两条一律忽略：按钮可见性已经挡住了，这里是第二道防线，
             // 让"重复点击"在状态层不可能造成破坏。
@@ -116,7 +149,16 @@ class MathPracticeViewModel(
 
     private fun advance(current: MathPracticeState): Transition =
         if (current.isLastProblem) {
-            Transition(current.copy(phase = MathPracticePhase.Finished))
+            // 整批归档（单事务）。中途退出不写 —— 已知取舍：做 9 题退出会丢掉这 9 题的记录，
+            // 但"练习"的语义是完整一组，半场数据会污染正确率的分母。
+            Transition(
+                current.copy(phase = MathPracticePhase.Finished),
+                archive = PracticeArchive(
+                    grade = current.grade,
+                    source = if (current.isReviewing) PracticeSource.REVIEW else PracticeSource.GRADE,
+                    attempts = current.attempts,
+                ),
+            )
         } else {
             Transition(
                 current.copy(index = current.index + 1, phase = MathPracticePhase.Answering),
@@ -126,7 +168,51 @@ class MathPracticeViewModel(
 
     /** 出新一组题并把作答态清零。切换年级与「再来一组」走同一条路径，避免两处重置逻辑各自漂移。 */
     private fun newSet(grade: Grade): Transition = Transition(
+        // MathPracticeState 的默认 source 就是 ByGrade，所以这里天然退出重做态
         MathPracticeState(grade = grade, problems = generate(grade)),
         listOf(MathPracticeEffect.ClearCanvas)
     )
+
+    /**
+     * 进入错题重做态。
+     *
+     * **空列表直接忽略**：错题本为空、或跨页传递的两个数组长度不匹配，都可能在界面上留下一个
+     * 可点的入口；放行会让 `problems[index]` 越界崩溃。
+     */
+    private fun beginReview(current: MathPracticeState, problems: List<Problem>): Transition =
+        if (problems.isEmpty()) {
+            Transition(current)
+        } else {
+            Transition(
+                current.copy(
+                    source = ProblemSource.ReviewMistakes,
+                    problems = problems,
+                    index = 0,
+                    attempts = emptyList(),
+                    phase = MathPracticePhase.Answering,
+                ),
+                listOf(MathPracticeEffect.ClearCanvas),
+            )
+        }
+
+    /** 重做态下的「再来一组」：重跑**同一批**错题，而不是退回按年级出题。 */
+    private fun restartReview(current: MathPracticeState): Transition = Transition(
+        current.copy(index = 0, attempts = emptyList(), phase = MathPracticePhase.Answering),
+        listOf(MathPracticeEffect.ClearCanvas)
+    )
+
+    companion object {
+        /**
+         * 显式工厂（`ViewModelProvider` 是 `androidx.*`，不影响本文件的纯 Kotlin 边界）。
+         *
+         * **故意不提供"从全局拿 recorder"的默认实现** —— 那会让"忘了初始化"表现为
+         * "一切正常但一条数据都不写"，是项目最讨厌的那类静默失败。
+         */
+        fun factory(recorder: PracticeRecorder): ViewModelProvider.Factory =
+            object : ViewModelProvider.Factory {
+                @Suppress("UNCHECKED_CAST")
+                override fun <T : ViewModel> create(modelClass: Class<T>): T =
+                    MathPracticeViewModel(recorder = recorder) as T
+            }
+    }
 }

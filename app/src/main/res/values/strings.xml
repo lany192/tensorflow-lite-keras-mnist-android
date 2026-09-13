@@ -30,6 +30,9 @@
     <string name="math_review_title">错题回顾</string>
     <string name="math_review_line_format">第 %1$d 题：%2$s = %3$d，你写的是 %4$s</string>
     <string name="math_review_unrecognized">未识别出数字</string>
+    <string name="math_action_review_mistakes">错题再练一遍</string>
+    <string name="math_review_progress_format">错题重做 第 %1$d/%2$d 题</string>
+    <string name="math_review_summary_format">这次重做答对 %1$d / %2$d 题</string>
 
     <!-- 顺序必须与 Grade 枚举一致：界面用 Spinner 的 position 直接映射到枚举 -->
     <string-array name="grade_names">

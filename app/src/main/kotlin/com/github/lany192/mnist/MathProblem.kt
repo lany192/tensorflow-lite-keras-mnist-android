@@ -19,3 +19,20 @@ enum class Grade { FIRST, SECOND, THIRD, FOURTH, FIFTH, SIXTH }
  *   在部分切分路径上与"什么都没写"难以区分。
  */
 data class Problem(val expression: String, val answer: Int)
+
+/**
+ * 把两个平行数组还原成题目列表；长度不一致返回 `null`。
+ *
+ * 为什么用两个数组跨页面传题、而不是让 [Problem] 实现 `Parcelable`：`android.os.Parcel` 是
+ * `android.*`，会让**本文件掉出 `PureKotlinBoundaryTest` 的白名单**，连带 `MathProblemGeneratorTest`
+ * 一起失去 JVM 可测性。手写 Parcelable 实现同样不行。
+ *
+ * 返回 `null` 而不是抛异常：两个 Intent extra 是彼此独立的字段，长度没有结构性保证，
+ * 调用方拿到 `null` 直接结束页面即可。
+ */
+fun problemsOf(expressions: List<String>, answers: List<Int>): List<Problem>? =
+    if (expressions.size != answers.size) {
+        null
+    } else {
+        expressions.zip(answers) { expression, answer -> Problem(expression, answer) }
+    }

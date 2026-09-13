@@ -45,6 +45,7 @@ class PureKotlinBoundaryTest {
             "MainViewModel.kt",
             "MathPracticeContract.kt",
             "MathPracticeViewModel.kt",
+            "PracticeRepository.kt",
         )
     }
 }

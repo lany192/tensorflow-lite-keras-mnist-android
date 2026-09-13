@@ -1,19 +1,26 @@
 [versions]
 agp = "9.4.0"
-coreKtx = "1.17.0"
+coreKtx = "1.19.0"
 junit = "4.13.2"
 junitVersion = "1.3.0"
 espressoCore = "3.7.0"
 appcompat = "1.7.1"
 material = "1.13.0"
-activity = "1.11.0"
+activity = "1.13.0"
 constraintlayout = "2.2.1"
 tensorflow = "2.17.0"
 # 与 core-ktx 传递进来的 lifecycle 版本对齐，避免同一组库出现两个版本
-lifecycleRuntimeKtx = "2.6.2"
+lifecycleRuntimeKtx = "2.10.0"
 # core-ktx 的 api variant 已带入 coroutines-core 1.8.1，而 lifecycle-common 把 coroutines-android
 # 钉在 1.6.4。这里显式对齐两者：偏斜在下层是 NoSuchMethodError 的常见来源。
-coroutines = "1.8.1"
+coroutines = "1.11.0"
+# AGP 9 的内置 Kotlin 要求 KSP ≥2.3.1 才支持（AGP 自己的 module metadata 里那条
+# "KSP version needs to match KGP version" 是**下限不是上限**，按它选 2.2.x 会掉进
+# "AGP 9 支持在 2.3.1 才加入"的坑）。
+ksp = "2.3.6"
+# Room 2.x 稳定线。3.0 换了坐标（androidx.room3）且仍在 alpha，不用。
+# 注意不需要 room-ktx：room-runtime-android 2.8.4 已直接依赖 kotlinx-coroutines。
+room = "2.8.4"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -30,7 +37,10 @@ tensorflow = { module = "org.tensorflow:tensorflow-lite", version.ref = "tensorf
 # 所以 lifecycle-viewmodel-ktx 是多余的。
 androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycleRuntimeKtx" }
 kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "coroutines" }
+androidx-room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
+androidx-room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
+ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 

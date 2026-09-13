@@ -16,6 +16,7 @@
         android:orientation="horizontal">
 
         <TextView
+            android:id="@+id/textGradeLabel"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/math_grade_label" />
@@ -150,6 +151,17 @@
                 android:textSize="16sp"
                 tools:text="第 2 题：23 + 45 = 68，你写的是 96" />
         </ScrollView>
+
+        <!-- 放在 groupResult 内部：作答态 groupResult 是 GONE，所以这个按钮不会挤到画布。
+             绝不要把它挪到 groupResult 外面 —— 那会变成又一个影响画布高度的兄弟控件。 -->
+        <Button
+            android:id="@+id/buttonReviewMistakes"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="8dp"
+            android:text="@string/math_action_review_mistakes"
+            android:visibility="gone" />
     </LinearLayout>
 
     <!-- 按钮行：五个按钮按状态显示其中两个 -->

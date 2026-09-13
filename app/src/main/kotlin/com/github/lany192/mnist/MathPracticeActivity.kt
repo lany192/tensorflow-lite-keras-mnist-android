@@ -1,5 +1,7 @@
 package com.github.lany192.mnist
 
+import android.content.Context
+import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import android.widget.AdapterView
@@ -28,7 +30,13 @@ class MathPracticeActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMathPracticeBinding
     private var tflite: KerasTFLite? = null
     private var recognizer: MnistRecognizer? = null
-    private val viewModel: MathPracticeViewModel by viewModels()
+
+    private val viewModel: MathPracticeViewModel by viewModels {
+        // 归档端口目前是空实现；接入数据库后换成 PracticeDatabase.recorder(applicationContext)。
+        // 用显式工厂而不是无参构造，是因为 recorder 必须从外面注入 —— 让 ViewModel 自己去
+        // 全局拿，会让"忘了初始化"表现为"一切正常但一条数据都不写"。
+        MathPracticeViewModel.factory(PracticeRecorder.NoOp)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -38,6 +46,10 @@ class MathPracticeActivity : AppCompatActivity() {
         tflite = interpreter
         recognizer = MnistRecognizer(interpreter)
         bindActions()
+
+        // 从错题本进来时带着题目。**只在首次创建时灌注** —— 旋转会重建 Activity，而 ViewModel
+        // 还活着、重做的题目与进度都在，再灌一次会把进度重置（ViewModel 里也有第二道闸门）。
+        if (savedInstanceState == null) applyReviewFromIntent(intent)
 
         // 先同步渲染一次，避免 onStart 之前出现一帧空白。这一步**不会改变任何可见性** ——
         // 布局 XML 里的默认值与"作答态"的渲染结果逐项相同；若哪天不一致，这次渲染会挤矮画布、
@@ -77,6 +89,25 @@ class MathPracticeActivity : AppCompatActivity() {
         binding.buttonConfirm.setOnClickListener { viewModel.dispatch(MathPracticeIntent.Confirm) }
         binding.buttonNext.setOnClickListener { viewModel.dispatch(MathPracticeIntent.Next) }
         binding.buttonNextSet.setOnClickListener { viewModel.dispatch(MathPracticeIntent.StartNewSet) }
+        binding.buttonReviewMistakes.setOnClickListener {
+            viewModel.dispatch(MathPracticeIntent.ReviewCurrentMistakes)
+        }
+    }
+
+    /**
+     * 还原跨页传来的错题。没有 extra 说明这次是普通的按年级练习，直接返回。
+     *
+     * 两个数组长度不匹配时**结束页面**：带着一个残缺的题目集进去，`problems[index]` 会越界。
+     */
+    private fun applyReviewFromIntent(intent: Intent) {
+        val expressions = intent.getStringArrayListExtra(EXTRA_REVIEW_EXPRESSIONS) ?: return
+        val answers = intent.getIntegerArrayListExtra(EXTRA_REVIEW_ANSWERS) ?: return
+        val problems = problemsOf(expressions, answers)
+        if (problems.isNullOrEmpty()) {
+            finish()
+            return
+        }
+        viewModel.dispatch(MathPracticeIntent.StartReview(problems))
     }
 
     private fun onSubmit() {
@@ -130,17 +161,27 @@ class MathPracticeActivity : AppCompatActivity() {
         // 再点「确认」判定的还是刚才那个数。当前行为恰好等价：只有作答态可写。
         binding.fingerPaintView.inputEnabled = answering
 
+        // 重做态的题目跨年级，年级选择器没有语义。
+        // **必须是 INVISIBLE，绝不能用 GONE** —— 这一行是 wrap_content，它变矮会挤高 weight=1
+        // 的画布、触发 onSizeChanged 重建位图、把学生刚写的字迹清掉（AGENTS.md 记着这个事故）。
+        val showGrade = !state.isReviewing
+        binding.textGradeLabel.visibility = if (showGrade) View.VISIBLE else View.INVISIBLE
+        binding.spinnerGrade.visibility = if (showGrade) View.VISIBLE else View.INVISIBLE
+        binding.spinnerGrade.isEnabled = showGrade
         // Spinner 是有状态控件、自己也存着一份选中位置，是第二个真相来源：只在必要时回写，
         // 回写触发的回调会被 ViewModel 里"同年级即无操作"的闸门吸收，不形成回环。
-        if (binding.spinnerGrade.selectedItemPosition != state.grade.ordinal) {
+        // 重做态下完全不碰它 —— 那时的 grade 只是"发起重做时选的年级"，回写没有意义。
+        if (showGrade && binding.spinnerGrade.selectedItemPosition != state.grade.ordinal) {
             binding.spinnerGrade.setSelection(state.grade.ordinal)
         }
 
-        binding.textProgress.text = if (finished) {
+        binding.textProgress.text = when {
             // 结算页已经没有"第几题"的语义了
-            ""
-        } else {
-            getString(R.string.math_progress_format, state.index + 1, state.problemCount)
+            finished -> ""
+            state.isReviewing ->
+                getString(R.string.math_review_progress_format, state.index + 1, state.problemCount)
+
+            else -> getString(R.string.math_progress_format, state.index + 1, state.problemCount)
         }
         binding.textExpression.text = getString(R.string.math_expression_format, state.currentProblem.expression)
 
@@ -172,11 +213,19 @@ class MathPracticeActivity : AppCompatActivity() {
         }
 
         if (finished) {
-            binding.textSummary.text = if (state.wrongAttempts.isEmpty()) {
-                getString(R.string.math_summary_all_correct, state.attempts.size)
-            } else {
-                getString(R.string.math_summary_format, state.correctCount, state.attempts.size)
+            binding.textSummary.text = when {
+                state.isReviewing ->
+                    getString(R.string.math_review_summary_format, state.correctCount, state.attempts.size)
+
+                state.wrongAttempts.isEmpty() ->
+                    getString(R.string.math_summary_all_correct, state.attempts.size)
+
+                else ->
+                    getString(R.string.math_summary_format, state.correctCount, state.attempts.size)
             }
+            // 没有错题就不给这个入口 —— 点了也是空操作
+            binding.buttonReviewMistakes.visibility =
+                if (state.wrongAttempts.isNotEmpty()) View.VISIBLE else View.GONE
             binding.textReview.text = state.wrongAttempts.joinToString("\n") { attempt ->
                 getString(
                     R.string.math_review_line_format,
@@ -202,5 +251,22 @@ class MathPracticeActivity : AppCompatActivity() {
 
     private fun showToast(message: String) {
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+    }
+
+    companion object {
+        private const val EXTRA_REVIEW_EXPRESSIONS = "review_expressions"
+        private const val EXTRA_REVIEW_ANSWERS = "review_answers"
+
+        /**
+         * 用一批题目启动练习页（错题重做）。
+         *
+         * 题目用**两个平行数组**传，而不是让 `Problem` 实现 `Parcelable`：`android.os.Parcel`
+         * 是 `android.*`，会让 `MathProblem.kt` 掉出纯 Kotlin 白名单，连带它的单测一起失去
+         * JVM 可测性。数组在 `onCreate` 里同步还原，所以没有"先渲染帧再替换"的闪烁。
+         */
+        fun reviewIntent(context: Context, problems: List<Problem>): Intent =
+            Intent(context, MathPracticeActivity::class.java)
+                .putStringArrayListExtra(EXTRA_REVIEW_EXPRESSIONS, ArrayList(problems.map { it.expression }))
+                .putIntegerArrayListExtra(EXTRA_REVIEW_ANSWERS, ArrayList(problems.map { it.answer }))
     }
 }

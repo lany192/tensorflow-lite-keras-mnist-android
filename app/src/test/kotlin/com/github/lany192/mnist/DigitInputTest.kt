@@ -1,7 +1,9 @@
 package com.github.lany192.mnist
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Test
+import java.math.BigDecimal
 
 /** [digitInputOf] 的纯 JVM 测试：三种形态互斥，且每种形态的判定优先级是明确的。 */
 class DigitInputTest {
@@ -29,6 +31,41 @@ class DigitInputTest {
             DigitInput.Digits(listOf(6, 8), totalCount = 7),
             digitInputOf(canvasEmpty = false, digits = listOf(6, 8), totalCount = 7)
         )
+    }
+
+    /** 小数点位置属于识别事实，必须原样穿过 [digitInputOf]。 */
+    @Test
+    fun digits_carryDecimalIndexes() {
+        assertEquals(
+            DigitInput.Digits(listOf(1, 5), totalCount = 2, decimalIndexes = listOf(1)),
+            digitInputOf(
+                canvasEmpty = false,
+                digits = listOf(1, 5),
+                totalCount = 2,
+                decimalIndexes = listOf(1),
+            )
+        )
+    }
+
+    @Test
+    fun digitsText_insertsDecimalPointWithoutLosingLeadingZero() {
+        assertEquals("0.5", digitsText(listOf(0, 5), listOf(1)))
+        assertEquals("068", digitsText(listOf(0, 6, 8), emptyList()))
+    }
+
+    /** BigDecimal 按数值比较，`68.0` 与 `68` 必须相等。 */
+    @Test
+    fun decimalValue_comparesExactlyAcrossZeroScale() {
+        val value = decimalValueOf(listOf(6, 8, 0), listOf(2))
+        assertEquals(0, value?.compareTo(BigDecimal("68")))
+        assertEquals(BigDecimal("0.5"), decimalValueOf(listOf(0, 5), listOf(1)))
+    }
+
+    @Test
+    fun decimalValue_rejectsInvalidPointPositions() {
+        assertNull("多个小数点必须非法", decimalValueOf(listOf(1, 2, 3), listOf(1, 2)))
+        assertNull("小数点不能在开头", decimalValueOf(listOf(5), listOf(0)))
+        assertNull("小数点不能在末尾", decimalValueOf(listOf(5), listOf(1)))
     }
 
     /**

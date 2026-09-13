@@ -13,6 +13,7 @@ import kotlin.math.roundToInt
  * 数值行为必须与历史单数字版本保持逐字节一致：这里的每一步（多级减半缩放、
  * 缩放到 [MID_SIZE]、缩放到 [CONTENT_SIZE]、亮度归一化、按质心居中）都是为了让
  * 手指绘制出的粗笔画贴合 MNIST 的分布，任何"顺手优化"都会破坏识别效果。
+ * 数字与小数点共用这一步；小数点被缩放成实心椭圆，这正是 Python 训练脚本合成的分布。
  * 该类依赖 Android 的 Bitmap 缩放实现（无法在 JVM 上复刻），因此切分逻辑不要写在这里。
  */
 object MnistPreprocessor {
@@ -23,11 +24,11 @@ object MnistPreprocessor {
     /**
      * 把 [box] 区域归一化成 28x28 的 784 个 float（笔画为 1，背景为 0）。
      *
-     * [box] 必须是该数字的紧墨迹包围盒，不要为了"保险"加 padding：
+     * [box] 必须是该字形（数字或小数点）的紧墨迹包围盒，不要为了"保险"加 padding：
      * 缩放分母和质心计算都依赖这个紧包围盒，加 padding 会让数字在 28x28 里变小，
      * 同时破坏与单数字版本的等价性。
      *
-     * 单个数字时 box 即全图墨迹包围盒，输出与改造前完全一致。
+     * 单个字形时 box 即全图墨迹包围盒；数字输出与改造前完全一致。
      * 区域无墨时返回长度为 0 的数组。
      */
     fun preprocessRegion(bitmap: Bitmap, box: Box): FloatArray {

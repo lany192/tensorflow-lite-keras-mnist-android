@@ -48,15 +48,24 @@ class MainViewModel(
                 // 两种"没拿到数字"都保持原状态：旧结果不该被一次失败的识别擦掉
                 DigitInput.CanvasEmpty -> Transition(current, listOf(MainEffect.EmptyCanvas))
                 DigitInput.NotRecognized -> Transition(current, listOf(MainEffect.NotRecognized))
-                is DigitInput.Digits -> Transition(
-                    current.copy(digits = input.value),
-                    // 超位数只截断不阻断，与识别器"截断但如实报告实际位数"的语义一致
-                    if (input.totalCount > maxDigits) {
-                        listOf(MainEffect.TooManyDigits(maxDigits))
+                is DigitInput.Digits -> {
+                    if (decimalValueOf(input.value, input.decimalIndexes) == null) {
+                        Transition(current, listOf(MainEffect.InvalidNumber))
                     } else {
-                        emptyList()
+                        Transition(
+                            current.copy(
+                                digits = input.value,
+                                decimalIndexes = input.decimalIndexes,
+                            ),
+                            // 超位数只截断不阻断，与识别器"截断但如实报告实际位数"的语义一致
+                            if (input.totalCount > maxDigits) {
+                                listOf(MainEffect.TooManyDigits(maxDigits))
+                            } else {
+                                emptyList()
+                            }
+                        )
                     }
-                )
+                }
             }
         }
     }

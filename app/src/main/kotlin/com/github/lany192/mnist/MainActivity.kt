@@ -84,7 +84,12 @@ class MainActivity : AppCompatActivity() {
         } finally {
             bitmap.recycle()
         }
-        return digitInputOf(canvasEmpty = false, digits = result.digits, totalCount = result.totalCount)
+        return digitInputOf(
+            canvasEmpty = false,
+            digits = result.digits,
+            totalCount = result.totalCount,
+            decimalIndexes = result.decimalIndexes,
+        )
     }
 
     /** 幂等：`repeatOnLifecycle` 每次 onStart 都会重放一次当前状态。 */
@@ -98,8 +103,8 @@ class MainActivity : AppCompatActivity() {
         // 逐位拆分用于区分"切分错了"还是"认错了"，实机排查时是关键信息
         binding.textDetail.text = getString(
             R.string.digit_detail_format,
-            state.digits.size,
-            state.digits.joinToString(" ")
+            state.glyphCount,
+            state.value.toCharArray().joinToString(" ")
         )
     }
 
@@ -109,6 +114,7 @@ class MainActivity : AppCompatActivity() {
             MainEffect.EmptyCanvas -> showToast(getString(R.string.toast_empty))
             MainEffect.NotRecognized -> showToast(getString(R.string.toast_no_ink))
             is MainEffect.TooManyDigits -> showToast(getString(R.string.toast_too_many, effect.max))
+            MainEffect.InvalidNumber -> showToast(getString(R.string.toast_invalid_decimal))
         }
     }
 

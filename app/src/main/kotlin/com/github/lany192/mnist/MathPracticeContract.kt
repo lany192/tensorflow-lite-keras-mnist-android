@@ -8,7 +8,12 @@ data class Attempt(
     /** 学生写出的数字位。存 `List<Int>` 而不是 String，与 [DigitInput.Digits.value] 保持一致，省掉一次 join/split 往返。 */
     val written: List<Int>,
     val correct: Boolean,
-)
+    /** 小数点位于第几个数字之前；空表示整数。 */
+    val decimalIndexes: List<Int> = emptyList(),
+) {
+    /** 拼回学生实际写出的文本，保留前导零和小数点。 */
+    val writtenText: String get() = digitsText(written, decimalIndexes)
+}
 
 /**
  * 题目从哪来。
@@ -33,9 +38,15 @@ sealed interface ProblemSource {
 sealed interface MathPracticePhase {
     data object Answering : MathPracticePhase
 
-    data class Confirming(val digits: List<Int>) : MathPracticePhase
+    data class Confirming(
+        val digits: List<Int>,
+        val decimalIndexes: List<Int> = emptyList(),
+    ) : MathPracticePhase
 
-    data class Judged(val digits: List<Int>) : MathPracticePhase
+    data class Judged(
+        val digits: List<Int>,
+        val decimalIndexes: List<Int> = emptyList(),
+    ) : MathPracticePhase
 
     data object Finished : MathPracticePhase
 }
@@ -123,6 +134,9 @@ sealed interface MathPracticeEffect {
     /** 有笔迹，但切不出任何数字。 */
     data object NotRecognized : MathPracticeEffect
 
-    /** 识别到的位数超过上限，只取前 [max] 位。 */
+    /** 识别到的数字位数超过上限，只取前 [max] 位。 */
     data class TooManyDigits(val max: Int) : MathPracticeEffect
+
+    /** 小数点位置非法，例如多个点、点在开头或末尾。 */
+    data object InvalidNumber : MathPracticeEffect
 }

@@ -1,7 +1,6 @@
 package com.github.lany192.mnist
 
 import android.content.Context
-import android.os.Environment
 import org.tensorflow.lite.Interpreter
 import java.io.BufferedOutputStream
 import java.io.File
@@ -17,7 +16,9 @@ class KerasTFLite(context: Context) {
     }
 
     /**
-     * 识别单个数字，返回 0~9 的预测下标；[input] 为空或长度不为 784 时返回 -1。
+     * 识别单个归一化字形，返回模型类别下标。
+     *
+     * 0~9 是数字，[DECIMAL_POINT_CLASS] 是小数点；[input] 为空或长度不为 784 时返回 -1。
      */
     fun classify(input: FloatArray?): Int {
         if (input == null || input.size != MODEL_SIZE * MODEL_SIZE) return -1
@@ -25,14 +26,15 @@ class KerasTFLite(context: Context) {
         for (i in input.indices) {
             input4d[0][i / MODEL_SIZE][i % MODEL_SIZE][0] = input[i]
         }
-        val output = Array(1) { FloatArray(10) }
+        val output = Array(1) { FloatArray(OUTPUT_CLASS_COUNT) }
         mInterpreter.run(input4d, output)
         return getMax(output[0])
     }
 
-    fun run(input: FloatArray?): String? {
-        val digit = classify(input)
-        return if (digit >= 0) digit.toString() else null
+    fun run(input: FloatArray?): String? = when (val symbol = classify(input)) {
+        in 0..9 -> symbol.toString()
+        DECIMAL_POINT_CLASS -> "."
+        else -> null
     }
 
     @Throws(IOException::class)
@@ -61,7 +63,7 @@ class KerasTFLite(context: Context) {
         for (i in 1..<results.size) {
             if (results[i] > maxValue) {
                 maxID = i
-                maxValue = results[maxID]
+                maxValue = results[i]
             }
         }
         return maxID
@@ -72,6 +74,8 @@ class KerasTFLite(context: Context) {
     }
 
     companion object {
+        const val DECIMAL_POINT_CLASS = 10
+        private const val OUTPUT_CLASS_COUNT = 11
         private const val MODEL_SIZE = 28
     }
 }

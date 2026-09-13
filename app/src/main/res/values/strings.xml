@@ -2,19 +2,20 @@
     <string name="app_name">MnistTFLite</string>
     <string name="action_clear">清除</string>
     <string name="action_detect">识别</string>
-    <string name="hint_write">请从左到右依次书写：每位尽量写大（高度接近画布），数字之间留出空隙，最多 %1$d 位</string>
+    <string name="hint_write">请从左到右依次书写：数字尽量写大、留空隙；小数点写在右下角，最多 %1$d 位数字</string>
     <string name="result_format">识别结果：%1$s</string>
-    <string name="digit_detail_format">共 %1$d 位：%2$s</string>
+    <string name="digit_detail_format">共 %1$d 个字符：%2$s</string>
     <string name="toast_empty">请先写一个数字</string>
     <string name="toast_no_ink">没检测到有效笔画，请写大一点</string>
     <string name="toast_too_many">位数太多，只识别前 %1$d 位；请写大一些并减少位数</string>
+    <string name="toast_invalid_decimal">小数点位置不正确，请写在两个数字之间并重写</string>
 
     <!-- 数学练习 -->
     <string name="action_math_practice">数学练习</string>
     <string name="math_grade_label">年级</string>
     <string name="math_progress_format">第 %1$d/%2$d 题</string>
     <string name="math_expression_format">%1$s = ?</string>
-    <string name="math_hint_write">在下面写出答案，尽量写大（高度尽量占满画布）</string>
+    <string name="math_hint_write">在下面写出答案，数字尽量写大；小数点写在右下角，不要写在开头或末尾</string>
     <string name="math_action_submit">提交</string>
     <string name="math_action_rewrite">重写</string>
     <string name="math_action_confirm">确认</string>
@@ -23,6 +24,7 @@
     <string name="math_check_hint">请核对识别结果：没问题点「确认」，识别错了点「重写」</string>
     <string name="math_toast_write_first">请先写出答案</string>
     <string name="math_toast_detect_failed">没识别到数字，请写大一点再试</string>
+    <string name="math_toast_invalid_decimal">小数点位置不正确，请写在两个数字之间并重写</string>
     <string name="math_wrong_answer_format">回答错误，正确答案是 %1$d</string>
     <string name="math_your_answer_format">你写的是 %1$s</string>
     <string name="math_summary_format">答对 %1$d / %2$d 题</string>

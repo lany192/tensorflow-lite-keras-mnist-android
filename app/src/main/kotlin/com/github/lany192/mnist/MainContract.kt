@@ -6,11 +6,18 @@ package com.github.lany192.mnist
  * 刻意不含 Bitmap、也不含画布内容：画布属于 View 自己的状态，而 Bitmap 这类 identity-equals
  * 的对象放进 StateFlow 会引起漏渲染或虚假渲染（StateFlow 是按 `equals` 做 conflate 的）。
  */
-data class MainState(val digits: List<Int> = emptyList()) {
+data class MainState(
+    val digits: List<Int> = emptyList(),
+    /** 小数点位于第几个数字之前；空表示整数。 */
+    val decimalIndexes: List<Int> = emptyList(),
+) {
     val hasResult: Boolean get() = digits.isNotEmpty()
 
-    /** 拼成展示用的数值串，如 `[1, 2, 3]` → `"123"`。 */
-    val value: String get() = digits.joinToString("")
+    /** 拼成展示用的数值串，如 `[1, 2, 3]` → `"123"`，`[1, 5] + [1]` → `"1.5"`。 */
+    val value: String get() = digitsText(digits, decimalIndexes)
+
+    /** 包括小数点在内的字形数量，用于逐字形排查。 */
+    val glyphCount: Int get() = digits.size + decimalIndexes.size
 }
 
 sealed interface MainIntent {
@@ -38,6 +45,9 @@ sealed interface MainEffect {
     /** 有笔迹，但切不出任何数字。 */
     data object NotRecognized : MainEffect
 
-    /** 识别到的位数超过上限，只取前 [max] 位。 */
+    /** 识别到的数字位数超过上限，只取前 [max] 位。 */
     data class TooManyDigits(val max: Int) : MainEffect
+
+    /** 有笔迹但小数点位置非法，例如多个点、点在开头或末尾。 */
+    data object InvalidNumber : MainEffect
 }

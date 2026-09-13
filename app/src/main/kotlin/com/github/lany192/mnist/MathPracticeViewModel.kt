@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
+import java.math.BigDecimal
 
 /**
  * 小学口算练习的状态机。
@@ -126,28 +127,49 @@ class MathPracticeViewModel(
     private fun submit(current: MathPracticeState, input: DigitInput): Transition = when (input) {
         DigitInput.CanvasEmpty -> Transition(current, listOf(MathPracticeEffect.EmptyCanvas))
         DigitInput.NotRecognized -> Transition(current, listOf(MathPracticeEffect.NotRecognized))
-        is DigitInput.Digits -> Transition(
-            current.copy(phase = MathPracticePhase.Confirming(input.value)),
-            // 超位数仍然进待确认：只截断不阻断，与识别器"截断但如实报告实际位数"的语义一致
-            if (input.totalCount > maxDigits) {
-                listOf(MathPracticeEffect.TooManyDigits(maxDigits))
+        is DigitInput.Digits -> {
+            if (decimalValueOf(input.value, input.decimalIndexes) == null) {
+                Transition(current, listOf(MathPracticeEffect.InvalidNumber))
             } else {
-                emptyList()
+                Transition(
+                    current.copy(
+                        phase = MathPracticePhase.Confirming(input.value, input.decimalIndexes)
+                    ),
+                    // 超位数仍然进待确认：只截断不阻断，与识别器"截断但如实报告实际位数"的语义一致
+                    if (input.totalCount > maxDigits) {
+                        listOf(MathPracticeEffect.TooManyDigits(maxDigits))
+                    } else {
+                        emptyList()
+                    }
+                )
             }
-        )
+        }
     }
 
     private fun confirm(current: MathPracticeState): Transition {
-        val digits = (current.phase as MathPracticePhase.Confirming).digits
-        // 必须按数值比较：学生写 "068" 与答案 68 是同一个数，字符串比较会把它判错，
-        // 而带前导零的写法在手写时很常见。
-        val written = digits.joinToString("").toIntOrNull()
-        val correct = written != null && written == current.currentProblem.answer
+        val confirming = current.phase as MathPracticePhase.Confirming
+        val digits = confirming.digits
+        val decimalIndexes = confirming.decimalIndexes
+        // 必须按精确数值比较：学生写 "068"、"68.0" 与答案 68 都是同一个数。
+        // 字符串比较会把这些写法判错；Double 则会引入二进制浮点误差。
+        val written = decimalValueOf(digits, decimalIndexes)
+        val correct = written != null &&
+            written.compareTo(BigDecimal.valueOf(current.currentProblem.answer.toLong())) == 0
         val recorded = current.copy(
-            attempts = current.attempts + Attempt(current.index + 1, current.currentProblem, digits, correct)
+            attempts = current.attempts + Attempt(
+                index = current.index + 1,
+                problem = current.currentProblem,
+                written = digits,
+                correct = correct,
+                decimalIndexes = decimalIndexes,
+            )
         )
         // 答对不停顿，直接进入下一题；答错停在已判定态等学生看完再点「下一题」。
-        return if (correct) advance(recorded) else Transition(recorded.copy(phase = MathPracticePhase.Judged(digits)))
+        return if (correct) {
+            advance(recorded)
+        } else {
+            Transition(recorded.copy(phase = MathPracticePhase.Judged(digits, decimalIndexes)))
+        }
     }
 
     private fun advance(current: MathPracticeState): Transition =

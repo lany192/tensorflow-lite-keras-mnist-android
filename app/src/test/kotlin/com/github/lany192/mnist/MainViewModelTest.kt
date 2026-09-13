@@ -52,6 +52,32 @@ class MainViewModelTest {
     }
 
     @Test
+    fun submit_decimal_recordsPointPosition() {
+        viewModel.dispatch(
+            MainIntent.Submit(
+                DigitInput.Digits(listOf(1, 5), totalCount = 2, decimalIndexes = listOf(1))
+            )
+        )
+
+        assertEquals(listOf(1, 5), viewModel.state.value.digits)
+        assertEquals(listOf(1), viewModel.state.value.decimalIndexes)
+        assertEquals("1.5", viewModel.state.value.value)
+    }
+
+    @Test
+    fun submit_invalidDecimal_keepsPreviousResultAndEmitsEffect() {
+        viewModel.dispatch(MainIntent.Submit(DigitInput.Digits(listOf(7), totalCount = 1)))
+        viewModel.dispatch(
+            MainIntent.Submit(
+                DigitInput.Digits(listOf(1, 2), totalCount = 2, decimalIndexes = listOf(0))
+            )
+        )
+
+        assertEquals("7", viewModel.state.value.value)
+        assertEquals(MainEffect.InvalidNumber, takeEffect())
+    }
+
+    @Test
     fun submit_tooManyDigits_stillRecordsTruncatedValueAndEmitsEffect() {
         viewModel.dispatch(MainIntent.Submit(DigitInput.Digits(listOf(1, 2, 3, 4), totalCount = 6)))
 

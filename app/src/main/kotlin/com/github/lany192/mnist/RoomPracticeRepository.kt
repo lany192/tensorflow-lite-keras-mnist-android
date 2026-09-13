@@ -72,7 +72,7 @@ private fun PracticeArchive.toAnswerEntities(): List<AnswerRecordEntity> = attem
         sessionId = 0,
         expression = attempt.problem.expression,
         correctAnswer = attempt.problem.answer,
-        written = attempt.written.joinToString(""),
+        written = attempt.writtenText,
         // 判定结果原样搬运，不在 SQL 里重算 —— 判定必须按数值比较（"068" 就是 68）
         correct = attempt.correct,
     )

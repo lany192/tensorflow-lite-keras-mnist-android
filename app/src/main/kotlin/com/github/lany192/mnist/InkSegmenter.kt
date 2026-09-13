@@ -10,6 +10,7 @@ data class Box(val left: Int, val top: Int, val right: Int, val bottom: Int) {
     val width: Int get() = right - left + 1
     val height: Int get() = bottom - top + 1
     val centerX: Float get() = (left + right) / 2f
+    val centerY: Float get() = (top + bottom) / 2f
     val area: Int get() = width * height
 
     fun union(other: Box): Box = Box(
@@ -19,6 +20,12 @@ data class Box(val left: Int, val top: Int, val right: Int, val bottom: Int) {
         maxOf(bottom, other.bottom)
     )
 }
+
+/** 切分结果的字形类别。小数点由几何上下文保留，再由 11 类模型验证形状。 */
+enum class GlyphKind { DIGIT, DECIMAL_POINT }
+
+/** 一个待识别字形。包围盒仍是紧贴墨迹的原始坐标。 */
+data class InkGlyph(val box: Box, val kind: GlyphKind)
 
 /**
  * 切分阈值。默认值针对本 App 的绘制条件（白底黑字、笔宽 64px、画布约 1080x900px）调校。
@@ -32,6 +39,17 @@ data class SegmentConfig(
     val mergeOverlapRatio: Float = 0.3f,
     /** 仅当存在多个组时生效：高度不足最高组该比例的组视为误触圆点。 */
     val minHeightRatio: Float = 0.25f,
+    /** 小数点相对数字高度的最大边长。32px 笔宽写出的点通常只有字高的 0.15~0.25。 */
+    val maxDotSizeRatio: Float = 0.38f,
+    /** 小数点包围盒的最大宽高比偏差，允许手写圆点写成略扁或略长的椭圆。 */
+    val dotAspectMin: Float = 0.65f,
+    val dotAspectMax: Float = 1.55f,
+    /** 实心点最低填充率。圆点的理论填充率约为 π/4。 */
+    val dotFillRatio: Float = 0.50f,
+    /** 小数点中心相对数字基线的允许区间，限制在字高的下方区域。 */
+    val dotBaselineBandRatio: Float = 0.48f,
+    /** 小数点与左右数字之间的最大空隙，相对参考字高。 */
+    val maxDotGapRatio: Float = 0.75f,
     /** 由字高推算单个数字的参考宽度（手写数字宽高比典型 0.6~0.9）。 */
     val avgDigitAspect: Float = 0.75f,
     /** 触发二次切分的最小宽度：相对参考宽度。 */
@@ -79,33 +97,69 @@ object InkSegmenter {
     /**
      * @param ink [toInkGray] 的输出，长度为 width*height。
      * @return 按书写顺序（centerX 升序）排列的紧包围盒；无有效笔画时返回空列表。
+     *   该入口只返回数字，小数点请使用 [segmentGlyphs]。
      */
     fun segment(
         ink: IntArray,
         width: Int,
         height: Int,
         config: SegmentConfig = SegmentConfig()
-    ): List<Box> {
+    ): List<Box> = segmentGlyphs(ink, width, height, config)
+        .filter { it.kind == GlyphKind.DIGIT }
+        .map { it.box }
+
+    /**
+     * 切出数字和小数点。
+     *
+     * 流程仍是：8 连通域标记 → 按水平交叠聚组 → 噪点过滤 → 守卫式颈部二次切分。
+     * 小数点必须先于 `dropShortGroups` / `isSolidBlob` 判定：它按定义就是矮小实心区域，
+     * 若直接沿用旧的噪声过滤，会永远到不了模型。只有“小而实心、靠基线、左右都有数字”
+     * 四个条件同时成立时才保留为小数点。
+     */
+    fun segmentGlyphs(
+        ink: IntArray,
+        width: Int,
+        height: Int,
+        config: SegmentConfig = SegmentConfig()
+    ): List<InkGlyph> {
         if (width <= 0 || height <= 0 || ink.size < width * height) return emptyList()
         val components = labelComponents(ink, width, height, config)
         if (components.isEmpty()) return emptyList()
-        var groups = groupComponents(components, config)
-        if (groups.size > 1) groups = dropShortGroups(groups, config)
-        if (config.enableBlobFilter) {
-            groups = groups.filterNot { isSolidBlob(it, ink, width, config) }
-        }
+        val groups = groupComponents(components, config)
         if (groups.isEmpty()) return emptyList()
+
+        val refHeight = groups.maxOf { it.height }.toFloat()
+        if (refHeight <= 0f) return emptyList()
+        val dotCandidates = groups.filter {
+            isDecimalPointShape(it, refHeight, ink, width, config)
+        }
+        // 位置判定只拿“不是点候选”的组当参考数字。位置不成立的候选不能被直接丢弃，
+        // 它可能只是写得较小、恰好呈方块状的数字；仍要放回原有过滤链路，再由模型定类。
+        val potentialDigits = groups.filterNot { it in dotCandidates }
+        val decimalPoints = if (potentialDigits.isEmpty()) {
+            emptyList()
+        } else {
+            dotCandidates.filter {
+                isDecimalPointPosition(it, potentialDigits, refHeight, config)
+            }
+        }
+        val digits = filterDigitGroups(groups.filterNot { it in decimalPoints }, ink, width, config)
+        if (digits.isEmpty()) return emptyList()
+
         // 参考宽度只由字高推导、不含宽度信息，所以只有一个组时二次切分的守卫退化成三条并列条件：
         // 宽度 >= 1.275H 与宽高比 >= 1.35（后者更严，是绑定约束），外加"切缝列只有一段墨"。
         // 正常手写 0-9 的宽高比都在 1.35 以下；宽而空心的数字（宽高比可能超过 1.35）由
         // "切缝列只有一段墨"挡住——空心数字的中段必然有上下两段墨。
         // 这是几条判据的组合而非结构保证：把笔画写成够宽的单段实心条仍会进入切分分支。
-        val refWidth = medianHeight(groups) * config.avgDigitAspect
-        val out = ArrayList<Box>(groups.size)
-        for (group in groups) {
-            splitWideGroup(ink, width, group, refWidth, 0, config, out)
+        val refWidth = medianHeight(digits) * config.avgDigitAspect
+        val digitBoxes = ArrayList<Box>(digits.size)
+        for (group in digits) {
+            splitWideGroup(ink, width, group, refWidth, 0, config, digitBoxes)
         }
-        out.sortBy { it.centerX }
+        val out = ArrayList<InkGlyph>(digitBoxes.size + decimalPoints.size)
+        digitBoxes.mapTo(out) { InkGlyph(it, GlyphKind.DIGIT) }
+        decimalPoints.mapTo(out) { InkGlyph(it, GlyphKind.DECIMAL_POINT) }
+        out.sortBy { it.box.centerX }
         return out
     }
 
@@ -193,11 +247,70 @@ object InkSegmenter {
         return groups
     }
 
+    private fun filterDigitGroups(
+        groups: List<Box>,
+        ink: IntArray,
+        width: Int,
+        config: SegmentConfig
+    ): List<Box> {
+        var digits = if (groups.size > 1) dropShortGroups(groups, config) else groups
+        if (config.enableBlobFilter) {
+            digits = digits.filterNot { isSolidBlob(it, ink, width, config) }
+        }
+        return digits
+    }
+
     private fun dropShortGroups(groups: List<Box>, config: SegmentConfig): List<Box> {
         val refHeight = groups.maxOf { it.height }
         if (refHeight <= 0) return groups
         val kept = groups.filter { it.height >= config.minHeightRatio * refHeight }
         return kept.ifEmpty { groups }
+    }
+
+    /** 小数点在线条形态上必须是小、实心、近方形；位置条件由 [isDecimalPointPosition] 负责。 */
+    private fun isDecimalPointShape(
+        box: Box,
+        refHeight: Float,
+        ink: IntArray,
+        width: Int,
+        config: SegmentConfig
+    ): Boolean {
+        val maxSize = config.maxDotSizeRatio * refHeight
+        if (box.width > maxSize || box.height > maxSize) return false
+        val aspect = box.width.toFloat() / box.height
+        if (aspect < config.dotAspectMin || aspect > config.dotAspectMax) return false
+        var inkCount = 0
+        for (y in box.top..box.bottom) {
+            val row = y * width
+            for (x in box.left..box.right) {
+                if (ink[row + x] > config.inkThreshold) inkCount++
+            }
+        }
+        if (inkCount.toFloat() / box.area < config.dotFillRatio) return false
+        return largestHoleArea(ink, width, box, config) < config.minComponentArea
+    }
+
+    /**
+     * 小数点必须夹在左右两个数字之间、靠近数字基线，且水平空隙不能大到像是一道独立笔迹。
+     * 只靠“小圆点”外形无法区分误触，上下文位置才是真正的判据。
+     */
+    private fun isDecimalPointPosition(
+        box: Box,
+        digitGroups: List<Box>,
+        refHeight: Float,
+        config: SegmentConfig
+    ): Boolean {
+        val left = digitGroups.filter { it.right < box.left }.maxByOrNull { it.right } ?: return false
+        val right = digitGroups.filter { it.left > box.right }.minByOrNull { it.left } ?: return false
+        val maxGap = config.maxDotGapRatio * refHeight
+        val leftGap = box.left - left.right - 1
+        val rightGap = right.left - box.right - 1
+        if (leftGap > maxGap || rightGap > maxGap) return false
+
+        val baseline = digitGroups.maxOf { it.bottom }
+        val upper = baseline - config.dotBaselineBandRatio * refHeight
+        val lower = baseline + config.dotBaselineBandRatio * refHeight
+        return box.centerY in upper..lower
     }
 
     /**

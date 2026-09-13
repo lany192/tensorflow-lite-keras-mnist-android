@@ -126,6 +126,77 @@ class InkSegmenterTest {
         val ink = canvas(300, 300)
         disk(ink, 300, 150, 150, 32)
         assertTrue(InkSegmenter.segment(ink, 300, 300).isEmpty())
+        assertTrue(InkSegmenter.segmentGlyphs(ink, 300, 300).isEmpty())
+    }
+
+    /** 位于两个数字之间、靠基线的小实心圆点必须作为小数点保留。 */
+    @Test
+    fun decimalPointBetweenDigits_isReturnedAsGlyph() {
+        val ink = canvas(300, 160)
+        rect(ink, 300, 10, 20, 39, 139)
+        disk(ink, 300, 85, 125, 12)
+        rect(ink, 300, 140, 20, 189, 139)
+
+        assertEquals(
+            listOf(
+                InkGlyph(Box(10, 20, 39, 139), GlyphKind.DIGIT),
+                InkGlyph(Box(73, 113, 97, 137), GlyphKind.DECIMAL_POINT),
+                InkGlyph(Box(140, 20, 189, 139), GlyphKind.DIGIT),
+            ),
+            InkSegmenter.segmentGlyphs(ink, 300, 160)
+        )
+        // 旧入口只返回数字，避免现有调用方把小数点当成一位数字送进模型。
+        assertEquals(
+            listOf(Box(10, 20, 39, 139), Box(140, 20, 189, 139)),
+            InkSegmenter.segment(ink, 300, 160)
+        )
+    }
+
+    /** 同样的小圆点若漂到数字上半部分，就不能仅凭形状升级成小数点。 */
+    @Test
+    fun dotAboveBaseline_isNotDecimalPoint() {
+        val ink = canvas(300, 160)
+        rect(ink, 300, 10, 20, 39, 139)
+        disk(ink, 300, 85, 45, 12)
+        rect(ink, 300, 140, 20, 189, 139)
+
+        assertEquals(
+            listOf(
+                InkGlyph(Box(10, 20, 39, 139), GlyphKind.DIGIT),
+                InkGlyph(Box(140, 20, 189, 139), GlyphKind.DIGIT),
+            ),
+            InkSegmenter.segmentGlyphs(ink, 300, 160)
+        )
+    }
+
+    /** 点右边没有数字时只能是噪声；`.5` 不作为合法小数输入，界面会提示学生写 `0.5`。 */
+    @Test
+    fun dotWithoutRightDigit_isNotDecimalPoint() {
+        val ink = canvas(300, 160)
+        rect(ink, 300, 10, 20, 39, 139)
+        disk(ink, 300, 85, 125, 12)
+
+        assertEquals(
+            listOf(InkGlyph(Box(10, 20, 39, 139), GlyphKind.DIGIT)),
+            InkSegmenter.segmentGlyphs(ink, 300, 160)
+        )
+    }
+
+    /** 小横条不能因为“矮”就被当成小数点，宽高比和填充率仍是形状守卫。 */
+    @Test
+    fun shortHorizontalBar_isNotDecimalPoint() {
+        val ink = canvas(300, 160)
+        rect(ink, 300, 10, 20, 39, 139)
+        rect(ink, 300, 70, 125, 100, 130)
+        rect(ink, 300, 140, 20, 189, 139)
+
+        assertEquals(
+            listOf(
+                InkGlyph(Box(10, 20, 39, 139), GlyphKind.DIGIT),
+                InkGlyph(Box(140, 20, 189, 139), GlyphKind.DIGIT),
+            ),
+            InkSegmenter.segmentGlyphs(ink, 300, 160)
+        )
     }
 
     /**

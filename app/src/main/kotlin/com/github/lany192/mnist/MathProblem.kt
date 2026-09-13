@@ -14,9 +14,9 @@ enum class Grade { FIRST, SECOND, THIRD, FOURTH, FIFTH, SIXTH }
  *
  * @param expression 等号**左边**的题面，如 `"23 + 45"`、`"3.5 + 1.5"`、`"1/4 + 3/4"`、`"80 的 25%"`。
  *   刻意不含 `"= ?"`，由界面拼接 —— 这样单元测试可以直接把 expression 丢给独立求值器验算。
- * @param answer 标准答案。**只可能是 1..9999 的整数**：识别链路只能读 0-9 十个数字，
- *   答案若带小数点或分数线就无法判定；答案也不会是 0，因为画布上单独写一个 "0" 是闭合环，
- *   在部分切分路径上与"什么都没写"难以区分。
+ * @param answer 标准答案。当前生成器仍只构造 1..9999 的整数：识别链路已经能读小数点，
+ *   但把答案类型扩展成小数会同时牵动出题器、Intent 和 Room schema，属于独立改动；
+ *   答案也不会是 0，因为画布上单独写一个 "0" 是闭合环，在部分切分路径上与"什么都没写"难以区分。
  */
 data class Problem(val expression: String, val answer: Int)
 

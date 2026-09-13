@@ -117,6 +117,48 @@ class MathPracticeViewModelTest {
     }
 
     @Test
+    fun submit_decimal_entersConfirmingWithPointPosition() {
+        val vm = viewModel()
+        vm.dispatch(
+            MathPracticeIntent.Submit(
+                DigitInput.Digits(listOf(6, 8, 0), totalCount = 3, decimalIndexes = listOf(2))
+            )
+        )
+
+        assertEquals(MathPracticePhase.Confirming(listOf(6, 8, 0), listOf(2)), vm.state.value.phase)
+    }
+
+    @Test
+    fun submit_invalidDecimal_staysAnsweringAndEmitsInvalidNumber() {
+        val vm = viewModel()
+        vm.dispatch(
+            MathPracticeIntent.Submit(
+                DigitInput.Digits(listOf(1, 2, 3), totalCount = 3, decimalIndexes = listOf(1, 2))
+            )
+        )
+
+        assertEquals(MathPracticePhase.Answering, vm.state.value.phase)
+        assertEquals(MathPracticeEffect.InvalidNumber, vm.takeEffect())
+    }
+
+    /** 精确数值比较：答案 68 时，学生写 "68.0" 也应当判对。 */
+    @Test
+    fun confirm_decimalFormOfInteger_isCorrect() {
+        val vm = viewModel()
+        vm.dispatch(
+            MathPracticeIntent.Submit(
+                DigitInput.Digits(listOf(6, 8, 0), totalCount = 3, decimalIndexes = listOf(2))
+            )
+        )
+        vm.dispatch(MathPracticeIntent.Confirm)
+
+        assertEquals(1, vm.state.value.index)
+        assertEquals(MathPracticePhase.Answering, vm.state.value.phase)
+        assertEquals("68.0", vm.state.value.attempts.single().writtenText)
+        assertTrue(vm.state.value.attempts.single().correct)
+    }
+
+    @Test
     fun confirm_wrong_entersJudgedWithoutAdvancing() {
         val vm = viewModel()
         vm.submit(listOf(9, 9))

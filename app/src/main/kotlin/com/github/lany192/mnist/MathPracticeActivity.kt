@@ -129,7 +129,12 @@ class MathPracticeActivity : AppCompatActivity() {
         } finally {
             bitmap.recycle()
         }
-        return digitInputOf(canvasEmpty = false, digits = result.digits, totalCount = result.totalCount)
+        return digitInputOf(
+            canvasEmpty = false,
+            digits = result.digits,
+            totalCount = result.totalCount,
+            decimalIndexes = result.decimalIndexes,
+        )
     }
 
     /**
@@ -188,20 +193,24 @@ class MathPracticeActivity : AppCompatActivity() {
 
         when (phase) {
             is MathPracticePhase.Confirming -> {
-                binding.textFeedback.text = getString(R.string.result_format, phase.digits.joinToString(""))
-                // 复用 MainActivity 的逐位拆分：得让学生看出是哪一位认错了，才能决定要不要重写。
+                val text = digitsText(phase.digits, phase.decimalIndexes)
+                binding.textFeedback.text = getString(R.string.result_format, text)
+                // 复用 MainActivity 的逐字形拆分：得让学生看出是哪一位认错了，才能决定要不要重写。
                 // 4 位答案的全对率只有 87%，这一步是防误判的主要关口。
                 binding.textDetail.text = getString(
                     R.string.digit_detail_format,
-                    phase.digits.size,
-                    phase.digits.joinToString(" ")
+                    phase.digits.size + phase.decimalIndexes.size,
+                    text.toCharArray().joinToString(" ")
                 )
             }
 
             is MathPracticePhase.Judged -> {
                 binding.textFeedback.text =
                     getString(R.string.math_wrong_answer_format, state.currentProblem.answer)
-                binding.textDetail.text = getString(R.string.math_your_answer_format, phase.digits.joinToString(""))
+                binding.textDetail.text = getString(
+                    R.string.math_your_answer_format,
+                    digitsText(phase.digits, phase.decimalIndexes)
+                )
             }
 
             // 进入作答态必须清掉上一次的结果，否则点"重写"后旧的"识别结果：1"会残留在屏幕上
@@ -234,8 +243,7 @@ class MathPracticeActivity : AppCompatActivity() {
                     attempt.problem.expression,
                     attempt.problem.answer,
                     // 当前不可达：进 Confirming 的必要条件就是识别出至少一位数字，故 written 必非空。
-                    // 保留它是为了不改动已验证的文案结构；要清理请单独开一个 commit（那是行为变更）。
-                    attempt.written.joinToString("").ifEmpty { getString(R.string.math_review_unrecognized) }
+                    attempt.writtenText.ifEmpty { getString(R.string.math_review_unrecognized) }
                 )
             }
         }
@@ -247,6 +255,7 @@ class MathPracticeActivity : AppCompatActivity() {
             MathPracticeEffect.EmptyCanvas -> showToast(getString(R.string.math_toast_write_first))
             MathPracticeEffect.NotRecognized -> showToast(getString(R.string.math_toast_detect_failed))
             is MathPracticeEffect.TooManyDigits -> showToast(getString(R.string.toast_too_many, effect.max))
+            MathPracticeEffect.InvalidNumber -> showToast(getString(R.string.math_toast_invalid_decimal))
         }
     }
 

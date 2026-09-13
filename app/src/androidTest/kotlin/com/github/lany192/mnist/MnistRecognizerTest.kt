@@ -84,6 +84,29 @@ class MnistRecognizerTest {
     }
 
     @Test
+    fun decimalPointBetweenDigits_isRecognizedAsPoint() {
+        val bitmap = blankCanvas()
+        val canvas = Canvas(bitmap)
+        stroke(canvas, 120f, 380f, 120f, 200f)
+        canvas.drawCircle(300f, 390f, STROKE_WIDTH / 2f, Paint().apply {
+            color = Color.BLACK
+            isAntiAlias = true
+        })
+        stroke(canvas, 480f, 380f, 480f, 200f)
+
+        val glyphs = recognizer.segmentGlyphs(bitmap)
+        assertEquals(
+            "应切出 数字 / 小数点 / 数字 三个字形",
+            listOf(GlyphKind.DIGIT, GlyphKind.DECIMAL_POINT, GlyphKind.DIGIT),
+            glyphs.map { it.kind }
+        )
+
+        val result = recognizer.recognize(bitmap, NO_LIMIT)
+        assertEquals(2, result.digits.size)
+        assertEquals("小数点应位于两位数字之间", listOf(1), result.decimalIndexes)
+    }
+
+    @Test
     fun maxDigits_truncatesButReportsTotal() {
         val bitmap = blankCanvas()
         val canvas = Canvas(bitmap)

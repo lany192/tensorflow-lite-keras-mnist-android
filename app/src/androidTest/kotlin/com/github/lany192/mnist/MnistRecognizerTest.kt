@@ -13,6 +13,8 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import kotlin.math.cos
+import kotlin.math.sin
 
 /**
  * 端到端仪器测试：跑的是与 App 完全相同的链路（切分 → Bitmap 归一化 → TFLite 推理）。
@@ -106,6 +108,51 @@ class MnistRecognizerTest {
         assertEquals("小数点应位于两位数字之间", listOf(1), result.decimalIndexes)
     }
 
+    /**
+     * 手指点触很少留下正圆：快速落笔常带出一小段拖尾，归一化后是斜向或扁长的胶囊。
+     *
+     * 斜向拖尾是最难的一类，因为切分器只看**紧包围盒**的宽高比：45° 拖尾的包围盒接近
+     * 方形，能顺利通过检查，而归一化后的固有长短轴比可以到 2.5，正是此前训练分布没覆盖
+     * 到的区间。修复前真机实测结果是：切分 [DIGIT, DECIMAL_POINT, DIGIT] 完全正确，
+     * 但模型把它认成 "8"（识别 [1, 8, 1]）——所以这里必须同时断言切分与识别，
+     * 否则失败时分不清该改切分器还是改模型。
+     *
+     * 48f 取在接近上限处：更长的拖尾会被 inkSegmenter 的 dotFillRatio 挡掉
+     * （斜向胶囊的包围盒填充率随长度上升而下降），那样测的就是切分器不是模型了。
+     * 三个变体的包围盒宽高比都落在 dotAspectMin/Max（0.65/1.55）内。
+     */
+    @Test
+    fun draggedDot_betweenDigits_isRecognizedAsPoint() {
+        val tails = listOf(
+            "水平拖尾" to floatArrayOf(16f, 0f),
+            "斜向拖尾" to floatArrayOf(48f, 45f),
+            "竖直拖尾" to floatArrayOf(12f, 90f),
+        )
+        for ((name, tail) in tails) {
+            val bitmap = blankCanvas()
+            val canvas = Canvas(bitmap)
+            stroke(canvas, 120f, 380f, 120f, 200f)
+            stroke(canvas, 480f, 380f, 480f, 200f)
+            val radians = Math.toRadians(tail[1].toDouble())
+            val halfX = (tail[0] / 2f * cos(radians)).toFloat()
+            val halfY = (tail[0] / 2f * sin(radians)).toFloat()
+            stroke(
+                canvas,
+                DOT_X - halfX, DOT_Y - halfY,
+                DOT_X + halfX, DOT_Y + halfY
+            )
+
+            val glyphs = recognizer.segmentGlyphs(bitmap)
+            val result = recognizer.recognize(bitmap, NO_LIMIT)
+            assertEquals(
+                "$name：切分=${glyphs.map { it.kind }}，识别=${result.digits}，" +
+                    "decimalIndexes=${result.decimalIndexes}",
+                2, result.digits.size
+            )
+            assertEquals("$name 应被识别为小数点", listOf(1), result.decimalIndexes)
+        }
+    }
+
     @Test
     fun maxDigits_truncatesButReportsTotal() {
         val bitmap = blankCanvas()
@@ -160,5 +207,8 @@ class MnistRecognizerTest {
         /** 与 FingerPaintView.strokeWidth 保持一致。 */
         private const val STROKE_WIDTH = 32f
         private const val NO_LIMIT = 32
+        /** 小数点的落笔中心：夹在两位数字之间，靠近基线。 */
+        private const val DOT_X = 300f
+        private const val DOT_Y = 390f
     }
 }

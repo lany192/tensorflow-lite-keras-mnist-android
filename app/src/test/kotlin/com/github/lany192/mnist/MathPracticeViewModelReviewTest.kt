@@ -120,27 +120,34 @@ class MathPracticeViewModelReviewTest {
         assertTrue(vm.state.value.attempts.isEmpty())
     }
 
+    /**
+     * 回归：Spinner 首次布局会带 `position = 0` 回调一次 `SelectGrade`。
+     *
+     * 如果这次回调被当作"用户在选年级"，重做态就会被自己的初始化回调顶掉 —— 真机上表现为
+     * **进了重做页却显示一组全新的年级题**，而且那次练习会被当作普通练习归档、拉低累计正确率。
+     */
     @Test
-    fun selectGrade_whileReviewing_returnsToGradeMode() {
+    fun selectGrade_whileReviewing_isIgnored() {
         val vm = viewModel()
         vm.dispatch(MathPracticeIntent.StartReview(mistakes))
-
-        vm.dispatch(MathPracticeIntent.SelectGrade(Grade.THIRD))
-
-        assertTrue(!vm.state.value.isReviewing)
-        assertEquals(Grade.THIRD, vm.state.value.grade)
-        assertEquals(problems, vm.state.value.problems)
-    }
-
-    /** 重做态下选**同一个**年级也要退出重做 —— 与按年级态下的"同年级即无操作"不同。 */
-    @Test
-    fun selectSameGrade_whileReviewing_stillReturnsToGradeMode() {
-        val vm = viewModel()
-        vm.dispatch(MathPracticeIntent.StartReview(mistakes))
+        val reviewing = vm.state.value
 
         vm.dispatch(MathPracticeIntent.SelectGrade(Grade.FIRST))
 
-        assertTrue(!vm.state.value.isReviewing)
+        assertTrue(vm.state.value.isReviewing)
+        assertEquals(reviewing, vm.state.value)
+    }
+
+    /** 换个年级也一样忽略：重做态下 Spinner 不可见也不可用，用户操作不到它。 */
+    @Test
+    fun selectDifferentGrade_whileReviewing_isIgnored() {
+        val vm = viewModel()
+        vm.dispatch(MathPracticeIntent.StartReview(mistakes))
+        val reviewing = vm.state.value
+
+        vm.dispatch(MathPracticeIntent.SelectGrade(Grade.THIRD))
+
+        assertEquals(reviewing, vm.state.value)
     }
 
     /** 结算页的按钮：只把本次练错的题拿出来重练。 */

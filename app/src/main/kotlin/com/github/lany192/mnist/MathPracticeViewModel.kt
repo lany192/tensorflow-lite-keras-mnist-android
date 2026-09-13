@@ -76,9 +76,12 @@ class MathPracticeViewModel(
         return when (intent) {
             // 同年级不动：Spinner 首次布局会用 position=0 回调一次，render 回写 selection 时也会
             // 回调。这道闸门是防 render→dispatch→render 回环的关键，不能省。
-            // 但重做态下选年级意味着"退出重做、回到按年级出题"，所以那时即使同年级也要重建。
+            //
+            // 重做态下一律忽略：那时 Spinner 是 `isEnabled = false` 且不可见，用户根本操作不到它，
+            // 所以任何 SelectGrade 都只可能来自系统的首次布局回调 —— 而放行它就会让重做态
+            // 被自己的初始化回调顶掉（真机上就是这么表现的：进了重做页却显示一组全新的年级题）。
             is MathPracticeIntent.SelectGrade ->
-                if (intent.grade == current.grade && !current.isReviewing) {
+                if (intent.grade == current.grade || current.isReviewing) {
                     Transition(current)
                 } else {
                     newSet(intent.grade)

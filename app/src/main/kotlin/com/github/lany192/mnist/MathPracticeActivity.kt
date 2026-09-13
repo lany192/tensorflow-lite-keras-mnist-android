@@ -32,10 +32,9 @@ class MathPracticeActivity : AppCompatActivity() {
     private var recognizer: MnistRecognizer? = null
 
     private val viewModel: MathPracticeViewModel by viewModels {
-        // 归档端口目前是空实现；接入数据库后换成 PracticeDatabase.recorder(applicationContext)。
         // 用显式工厂而不是无参构造，是因为 recorder 必须从外面注入 —— 让 ViewModel 自己去
         // 全局拿，会让"忘了初始化"表现为"一切正常但一条数据都不写"。
-        MathPracticeViewModel.factory(PracticeRecorder.NoOp)
+        MathPracticeViewModel.factory(PracticeDatabase.recorder(applicationContext))
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -104,6 +103,8 @@ class MathPracticeActivity : AppCompatActivity() {
         val answers = intent.getIntegerArrayListExtra(EXTRA_REVIEW_ANSWERS) ?: return
         val problems = problemsOf(expressions, answers)
         if (problems.isNullOrEmpty()) {
+            // 两个数组长度不匹配（或都是空的）：与其带着残缺的题目集进去让 problems[index] 越界，
+            // 不如直接结束页面。
             finish()
             return
         }

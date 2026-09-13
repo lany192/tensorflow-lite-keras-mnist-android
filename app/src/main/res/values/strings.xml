@@ -34,6 +34,21 @@
     <string name="math_review_progress_format">错题重做 第 %1$d/%2$d 题</string>
     <string name="math_review_summary_format">这次重做答对 %1$d / %2$d 题</string>
 
+    <!-- 学习记录 -->
+    <string name="action_history">学习记录</string>
+    <string name="action_back">返回</string>
+    <string name="history_empty">还没有练习记录，做完一组题就会出现在这里</string>
+    <string name="history_overall_format">累计正确率 %1$d%%</string>
+    <string name="history_sessions_title">历史练习</string>
+    <string name="history_mistakes_title">错题本</string>
+    <string name="history_grade_stat_format">%1$s　答对 %2$d/%3$d</string>
+    <string name="history_session_format">%1$s　%2$s　答对 %3$d/%4$d</string>
+    <string name="history_session_review_tag">错题重做</string>
+    <string name="history_mistake_format">%1$s = %2$d</string>
+    <string name="history_mistake_written_format">你写的是 %1$s（错了 %2$d 次）</string>
+    <string name="history_mistakes_beyond_format">另有 %1$d 道错题未纳入一次重做</string>
+    <string name="history_action_review">重做错题</string>
+
     <!-- 顺序必须与 Grade 枚举一致：界面用 Spinner 的 position 直接映射到枚举 -->
     <string-array name="grade_names">
         <item>一年级</item>

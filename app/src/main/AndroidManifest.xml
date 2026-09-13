@@ -22,6 +22,11 @@
             android:exported="false"
             android:label="@string/action_math_practice" />
 
+        <activity
+            android:name=".HistoryActivity"
+            android:exported="false"
+            android:label="@string/action_history" />
+
         <meta-data
             android:name="ScopedStorage"
             android:value="true" />

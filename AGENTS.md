@@ -14,7 +14,7 @@ The model still classifies a single character — multi-digit support lives enti
 
 - Train model: `cd python && python keras_mnist_tflite.py` → writes `model.tflite` to CWD → copy into `app/src/main/assets/` for the app to load.
 - Python deps: `pip install -r python/requirements.txt` (uses Aliyun mirror: `https://mirrors.aliyun.com/pypi/simple/`).
-- Android: standard Gradle (`./gradlew assembleDebug`, `./gradlew test`). `./gradlew test` exercises the segmentation algorithm — run it before and after touching `InkSegmenter`. APK output: `app/build/outputs/apk/debug/app-debug.apk`.
+- Android: standard Gradle (`./gradlew assembleDebug`, `./gradlew test`). `./gradlew test` is the JVM baseline — segmentation, problem generation, and all three state machines — and must stay green; it covers everything on the `PureKotlinBoundaryTest` whitelist. It does **not** exercise Room (see Persistence). Database tests need a device: `./gradlew connectedAndroidTest`. APK output: `app/build/outputs/apk/debug/app-debug.apk`.
 
 ## Gotchas
 
@@ -42,16 +42,40 @@ The model still classifies a single character — multi-digit support lives enti
 
 ## MVI conventions
 
-Both screens (`MainActivity`, `MathPracticeActivity`) are MVI: each has a `XxxContract.kt` (State / Intent / Effect) plus a `XxxViewModel.kt`. An Activity only does three things — translate input into an Intent, subscribe to State and render, execute one-shot Effects.
+Every screen (`MainActivity`, `MathPracticeActivity`, `HistoryActivity`) is MVI: each has a `XxxContract.kt` (State / Intent / Effect) plus a `XxxViewModel.kt`. An Activity only does three things — translate input into an Intent, subscribe to State and render, execute one-shot Effects.
 
 - **`*Contract.kt` and `*ViewModel.kt` must not `import android.`** (`androidx.*` is fine — `androidx.lifecycle.ViewModel` is a plain JVM class). Enforced by `PureKotlinBoundaryTest`. A ViewModel that touches `Bitmap` or `Context` drops out of JVM unit testing entirely — there is no Robolectric here.
-- **ViewModels stay synchronous on purpose.** `MutableStateFlow.value =` and `Channel.trySend` never suspend, so `dispatch()` returns with the state already in place and tests assert `state.value` directly — no `kotlinx-coroutines-test`, no `TestDispatcher`. The harder reason: `Dispatchers.Main` does not exist in JVM tests (`coroutines-android` is an Android artifact), so the moment a `viewModelScope.launch` appears the tests fail with `Module with the Main dispatcher had failed to initialize` rather than failing to compile. If you need async, read `MathPracticeViewModel`'s class comment first — it also explains how to lift `reduce` into a pure function when that day comes.
+- **State-machine ViewModels stay synchronous on purpose.** `MutableStateFlow.value =` and `Channel.trySend` never suspend, so `dispatch()` returns with the state already in place and tests assert `state.value` directly — no `kotlinx-coroutines-test`, no `TestDispatcher`. The harder reason: `Dispatchers.Main` does not exist in JVM tests (`coroutines-android` is an Android artifact), so the moment a `viewModelScope.launch` appears the tests fail with `Module with the Main dispatcher had failed to initialize` rather than failing to compile.
+
+  The dividing line for anything asynchronous is **"can this operation's result be re-derived?"**:
+  - **Writes cannot.** Hand them to an injected port and deliver them synchronously from `dispatch()` — `MathPracticeViewModel` does this with `PracticeRecorder`, whose implementation returns immediately and runs the I/O on an application-scoped `CoroutineScope`. **Never let an Activity write to the database from `lifecycleScope`**: rotation cancels it, the Effect that triggered it has already been consumed and will not be replayed — the summary screen renders normally, nothing is written, and nothing reports an error.
+  - **Reads can** (`Room`'s `Flow` re-emits on every subscription). The View collects and pushes `dispatch(Loaded(...))`; `HistoryViewModel` therefore stays a no-arg, pure-reducer ViewModel.
 - **All state transitions happen inside the single `private fun reduce(intent)`.** Helper methods may only return a `Transition`; they must not touch `_state.value` directly.
 - **Effect carries one-shot events only. Anything a freshly-created Activity must reproduce belongs in State.** The canvas freeze is the worked example: it is a pure function of `phase is Answering`, so `render()` derives it. Making it an Effect would mean that after rotation the new Activity's canvas is writable while the state still says "confirming" — the student thinks the canvas is locked, scribbles freely, then hits Confirm and gets judged on the earlier number.
 - **`render()` must be idempotent** (it replays on every `onStart`) and **must never call `dispatch()`**.
 - Never put `Bitmap` / `IntArray` / anything identity-equals into State — `StateFlow` conflates on `equals`, which turns into missed or spurious renders.
 - Recognition stays in the Activity deliberately: `MnistRecognizer` takes a `Bitmap`. The Activity only turns the canvas into a pure-data `DigitInput` (`CanvasEmpty` / `NotRecognized` / `Digits`); deciding what to *do* about an empty canvas, an unrecognized stroke, or too many digits is ViewModel policy — those are the only branches in the flow, and they have to be testable on the JVM.
 - The ViewModels get a no-arg constructor by giving every primary-constructor parameter a default. **Delete a default and `by viewModels()` throws `Cannot create an instance of class` at runtime with no compile-time warning.**
+
+## Persistence (Room)
+
+Practice history lives in a local SQLite database (`practice.db`, two tables). Nothing is uploaded; uninstalling clears it.
+
+- **`PracticeRepository.kt` / `PracticeRecorder` are the only persistence boundary** — pure Kotlin, in the boundary-test whitelist. Swapping Room out (KSP stops working, or you move to a different store) touches `RoomPracticeRepository.kt` alone.
+- **`answer_record.correct` is written by the ViewModel, never recomputed in SQL** with `CAST(written AS INTEGER)`. Judging must compare numerically ("068" is 68) and a second implementation of that rule would drift.
+- **The mistake book is "the latest record for each `(expression, correct_answer)` — if that record is wrong."** The `MAX(id)` subquery must **not** carry a `WHERE correct = 0` filter: with it, a problem answered wrongly once and correctly later keeps returning its old wrong row and **never leaves the mistake book**. `HistorySummaryTest.mistakes_problemCorrectedLater_disappears` pins this.
+- **Group by `(expression, correct_answer)`, not `expression` alone.** Expression text is reused across grades, and text-as-identity silently makes the generator's output the primary key.
+- **Sort by the autoincrement `id`, never by `created_at`** — one session's rows share a timestamp, so time-based ordering is unstable. `created_at` is display-only.
+- **Enum columns store `name`, never `ordinal`** — reordering `Grade` would silently corrupt existing rows.
+- **Review sessions are written like any other** (that is what lets the mistake book heal) **but are excluded from the accuracy stats** via `practice_session.source = 'REVIEW'`. A problem you just saw the answer to must not count toward the score.
+- **A set is archived in one transaction when it finishes; quitting halfway writes nothing.** Known trade-off: doing 9 of 10 problems and leaving loses those records. The fix, if ever needed, is an `Abandon` intent on exit — not per-problem writes. (Per-problem writes would need a session row up front and would let half-finished sets pollute the accuracy denominator.)
+- **`practice_session` deliberately stores no `total` / `correct`** — those are aggregates of `answer_record`, and a second copy would drift. The history list computes them with `GROUP BY session_id`.
+- minSdk 24 caps SQLite: **no window functions** (3.25 / API 30+) and **no `RETURNING`** (3.35 / API 31+). Format timestamps with `SimpleDateFormat`, not `java.time` (API 26+).
+- **The grade `Spinner` must be `INVISIBLE` + `isEnabled = false` in review mode, never `GONE`** — that row is `wrap_content`, and shrinking it grows the `weight=1` canvas, which rebuilds `drawingBitmap` and wipes the student's handwriting. (Same failure as the check hint.)
+- **`SelectGrade` is ignored while reviewing.** The Spinner is disabled and invisible then, so the only callback that can arrive is the system's initial `position = 0` one — and honouring it let the review mode be torn down by its own initialization, observed on-device as "the review page shows a brand-new grade set" (and that set getting archived as a normal practice, dragging the accuracy down).
+- **`Problem` must not become `Parcelable`**: `android.os.Parcel` is `android.*`, which would drop `MathProblem.kt` out of the whitelist and take `MathProblemGeneratorTest` with it. Cross-screen transport uses two parallel arrays plus the pure `problemsOf` (returns null on a length mismatch — the Activity then finishes rather than letting `problems[index]` go out of bounds).
+- **Reads are pushed in, writes are injected** — see the MVI section. `HistoryActivity` combines three Flows and dispatches `Loaded`; `MathPracticeActivity` receives a `PracticeRecorder` through `MathPracticeViewModel.factory(...)`.
+- **Database tests have no JVM path** (`room-runtime` is a KMP publication; an Android module's unit tests always resolve the `-android` variant). Keep strategy in pure Kotlin (`HistorySummary`) and leave only plainly-correct queries in the DAO; `./gradlew test` then covers the mistake-book rules, and instrumented tests only prove the DB opens and maps.
 
 ## Conventions
 

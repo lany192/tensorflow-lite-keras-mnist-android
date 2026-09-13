@@ -39,5 +39,12 @@ abstract class PracticeDatabase : RoomDatabase() {
                     NAME,
                 ).build().also { instance = it }
             }
+
+        /** 读取入口。三个 Flow 由 View 层收集后灌进 ViewModel。 */
+        fun repository(context: Context): PracticeRepository =
+            RoomPracticeRepository(get(context).practiceDao())
+
+        /** 写入入口。注入给 [MathPracticeViewModel]，在它的 `dispatch` 返回路径上被同步交付。 */
+        fun recorder(context: Context): PracticeRecorder = RoomPracticeRepository(get(context).practiceDao())
     }
 }

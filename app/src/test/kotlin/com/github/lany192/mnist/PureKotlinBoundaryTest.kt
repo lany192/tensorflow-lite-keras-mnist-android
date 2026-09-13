@@ -46,6 +46,9 @@ class PureKotlinBoundaryTest {
             "MathPracticeContract.kt",
             "MathPracticeViewModel.kt",
             "PracticeRepository.kt",
+            "HistorySummary.kt",
+            "HistoryContract.kt",
+            "HistoryViewModel.kt",
         )
     }
 }

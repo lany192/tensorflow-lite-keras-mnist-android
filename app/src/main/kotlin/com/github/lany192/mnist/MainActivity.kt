@@ -31,6 +31,9 @@ class MainActivity : AppCompatActivity() {
         binding.buttonMathPractice.setOnClickListener {
             startActivity(Intent(this, MathPracticeActivity::class.java))
         }
+        binding.buttonHistory.setOnClickListener {
+            startActivity(Intent(this, HistoryActivity::class.java))
+        }
         val tflite = KerasTFLite(this)
         mTFLite = tflite
         mRecognizer = MnistRecognizer(tflite)

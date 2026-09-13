@@ -17,15 +17,10 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <!-- configChanges 是必要的：旋转会重建 Activity，从而释放并重建 TFLite 解释器、
-             重新出一组题、丢掉作答进度。项目没有 ViewModel 依赖，用这一行换取状态不丢。
-             注意画布上已写的内容仍会丢（FingerPaintView.onSizeChanged 会重建绘制位图），
-             那是 View 的既有行为，与本功能无关。 -->
         <activity
             android:name=".MathPracticeActivity"
             android:exported="false"
-            android:label="@string/action_math_practice"
-            android:configChanges="orientation|screenSize|keyboardHidden" />
+            android:label="@string/action_math_practice" />
 
         <meta-data
             android:name="ScopedStorage"

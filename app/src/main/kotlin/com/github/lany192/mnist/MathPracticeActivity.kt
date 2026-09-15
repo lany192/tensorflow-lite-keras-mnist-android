@@ -12,6 +12,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.recyclerview.widget.LinearLayoutManager
 import com.github.lany192.mnist.databinding.ActivityMathPracticeBinding
 import kotlinx.coroutines.launch
 
@@ -31,6 +32,7 @@ class MathPracticeActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMathPracticeBinding
     private var tflite: KerasTFLite? = null
     private var recognizer: MnistRecognizer? = null
+    private val reviewAdapter = ReviewAdapter()
 
     private val viewModel: MathPracticeViewModel by viewModels {
         // 用显式工厂而不是无参构造，是因为 recorder 必须从外面注入 —— 让 ViewModel 自己去
@@ -47,6 +49,13 @@ class MathPracticeActivity : AppCompatActivity() {
         // 刻意不放进页面内容区 —— 首行已经被「年级 + 进度」占满，往里加控件会撑高那一行、
         // 挤矮 weight=1 的画布，触发 onSizeChanged 重建位图并擦掉学生刚写的字迹。
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
+
+        // 错题回顾列表。这三件必须在第一次 render 之前装配完：少任何一件，RecyclerView 都只是
+        // 静默地不显示内容。它整体在 groupResult 内（作答态 GONE），所以不参与画布的高度计算。
+        binding.recyclerReview.layoutManager = LinearLayoutManager(this)
+        binding.recyclerReview.adapter = reviewAdapter
+        // 原来是一个 TextView 拼多行，本来就没有动画；显式关掉才是忠实迁移。
+        binding.recyclerReview.itemAnimator = null
 
         val interpreter = KerasTFLite(this)
         tflite = interpreter
@@ -267,17 +276,12 @@ class MathPracticeActivity : AppCompatActivity() {
             // 没有错题就不给这个入口 —— 点了也是空操作
             binding.buttonReviewMistakes.visibility =
                 if (state.wrongAttempts.isNotEmpty()) View.VISIBLE else View.GONE
-            binding.textReview.text = state.wrongAttempts.joinToString("\n") { attempt ->
-                getString(
-                    R.string.math_review_line_format,
-                    attempt.index,
-                    attempt.problem.expression,
-                    attempt.problem.answer,
-                    // 当前不可达：进 Confirming 的必要条件就是识别出至少一位数字，故 written 必非空。
-                    attempt.writtenText.ifEmpty { getString(R.string.math_review_unrecognized) }
-                )
-            }
         }
+
+        // **无条件提交**，不要加 `if (state.wrongAttempts.isNotEmpty())` 之类的守卫：
+        // 结算后点「再来一组」会清空 attempts，作答完成后 groupResult 重新可见，
+        // 守卫会让上一组的错题行原样留在适配器里 —— 按钮已正确隐藏，列表却还在。
+        reviewAdapter.submitList(if (finished) state.wrongAttempts else emptyList())
     }
 
     private fun handleEffect(effect: MathPracticeEffect) {

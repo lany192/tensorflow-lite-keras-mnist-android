@@ -1,7 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  学习记录页。本页没有画布，因此条件显示可以自由使用 GONE（textEmpty / textMistakesBeyond）——
+  学习记录页。本页没有画布，因此条件显示可以自由使用 GONE（空态行、分区标题行）——
   那条「只能用 INVISIBLE」的铁律只约束练习页。
+
+  整页只有一个 RecyclerView：页面主视觉、空态提示、分区标题、统计行、练习行、错题行都是**行型**
+  （见 HistoryRows.kt「状态 → 行」的映射）。不要退回「每个分区一个容器」的写法，也不要在这里
+  再塞一个 ScrollView —— RecyclerView 就是本页唯一的滚动容器。
+
+  行间距由各 item 布局根节点的 layout_marginTop 提供，这里不再有静态控件，所以本文件里没有
+  任何 layout_margin；改动行距请改对应的 item_* 布局。
 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
@@ -15,83 +22,15 @@
     android:paddingBottom="@dimen/page_padding_v"
     tools:context=".HistoryActivity">
 
-    <ScrollView
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recyclerHistory"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:scrollbarStyle="outsideOverlay">
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical">
-
-            <!-- 本页唯一的主视觉 -->
-            <TextView
-                android:id="@+id/textOverall"
-                style="@style/TextAppearance.App.Headline"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                tools:text="累计正确率 82%" />
-
-            <TextView
-                android:id="@+id/textEmpty"
-                style="@style/TextAppearance.App.Body"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/space_xl"
-                android:gravity="center"
-                android:text="@string/history_empty"
-                android:textColor="@color/on_surface_variant"
-                android:visibility="gone" />
-
-            <LinearLayout
-                android:id="@+id/containerStats"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/space_lg"
-                android:orientation="vertical" />
-
-            <TextView
-                android:id="@+id/titleSessions"
-                style="@style/TextAppearance.App.Title"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/space_xl"
-                android:text="@string/history_sessions_title" />
-
-            <LinearLayout
-                android:id="@+id/containerSessions"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical" />
-
-            <TextView
-                android:id="@+id/titleMistakes"
-                style="@style/TextAppearance.App.Title"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/space_xl"
-                android:text="@string/history_mistakes_title" />
-
-            <TextView
-                android:id="@+id/textMistakesBeyond"
-                style="@style/TextAppearance.App.Caption"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/space_xs"
-                android:textColor="@color/on_surface_variant"
-                android:visibility="gone"
-                tools:text="另有 5 道错题未纳入一次重做"
-                tools:visibility="visible" />
-
-            <LinearLayout
-                android:id="@+id/containerMistakes"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical" />
-        </LinearLayout>
-    </ScrollView>
+        android:scrollbarStyle="outsideOverlay"
+        android:scrollbars="vertical"
+        tools:itemCount="6"
+        tools:listitem="@layout/item_mistake" />
 
     <!-- 返回入口不在这里：二级页统一用 ActionBar 左上角的返回箭头（见 DESIGN.md 1.3）。 -->
     <LinearLayout
@@ -106,7 +45,6 @@
             style="@style/Widget.App.Button.Primary"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="@dimen/space_sm"
             android:text="@string/history_action_review" />
     </LinearLayout>
 

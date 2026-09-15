@@ -13,6 +13,10 @@
      留在安全区（≤0.19）的机会，识别率就高一分。**不要为了"跟首页对齐"把这些值调大。**
   3. 包住画布的 FrameLayout 绝不能加 padding —— 它会直接吃掉画布尺寸。
 
+  结算区的错题回顾是本页唯一的列表（RecyclerView）。它安全的原因很具体：整个结算区 groupResult
+  在作答态是 GONE，而画布只在作答态参与布局 —— 两者永远不同时参与测量。**这个前提一旦破坏
+  （把列表挪出 groupResult、或给它 wrap_content），它就变成又一个能挤动画布的兄弟控件。**
+
   XML 里的默认可见性必须与 render() 对初始状态（Answering）生成的结果逐项一致：
   render() 在 onCreate 和每次 onStart 都会重放，两者不一致时第一次 render 就会翻转可见性、挤动画布。
 -->
@@ -168,20 +172,19 @@
             android:layout_marginTop="@dimen/space_md"
             android:text="@string/math_review_title" />
 
-        <!-- 最多 10 行错题，必须可滚动，否则小屏上按钮会被挤出屏幕 -->
-        <ScrollView
+        <!-- 最多 10 行错题，必须可滚动，否则小屏上按钮会被挤出屏幕。
+
+             ⚠️ layout_height=0dp + layout_weight=1 是**画布安全的前提**，不是排版偏好：
+             weight 会让 LinearLayout 给它一个 EXACTLY 的测量规格，而 RecyclerView 在 EXACTLY 下
+             直接采用父级给的高度、不测量子项，所以它的高度与列表里有几行完全无关。
+             改成 wrap_content 或挪出 groupResult 都会让它参与画布的高度计算 —— 见本文件顶部第 3 条。
+             PracticeLayoutConstraintTest 把这条钉住了。 -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/recyclerReview"
             android:layout_width="match_parent"
             android:layout_height="0dp"
-            android:layout_weight="1">
-
-            <TextView
-                android:id="@+id/textReview"
-                style="@style/TextAppearance.App.Body"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:lineSpacingExtra="@dimen/space_xs"
-                tools:text="第 2 题：23 + 45 = 68，你写的是 96" />
-        </ScrollView>
+            android:layout_weight="1"
+            android:scrollbars="vertical" />
 
         <!-- 放在 groupResult 内部：作答态 groupResult 是 GONE，所以这个按钮不会挤到画布。
              绝不要把它挪到 groupResult 外面 —— 那会变成又一个影响画布高度的兄弟控件。 -->

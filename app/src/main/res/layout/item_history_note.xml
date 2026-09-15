@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  错题超出一次重做上限时的提示（「另有 N 道错题未纳入一次重做」）。
+  用的是 Caption 而非 Body：它是注解，不是内容本身。文案带参数，所以在适配器里绑定。
+-->
+<TextView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/textNote"
+    style="@style/TextAppearance.App.Caption"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="@dimen/space_xs"
+    android:textColor="@color/on_surface_variant"
+    tools:text="另有 5 道错题未纳入一次重做" />

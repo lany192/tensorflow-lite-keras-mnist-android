@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  本页唯一的主视觉：累计正确率。
+  底部留出 space_lg，是原 containerStats 的 layout_marginTop 搬过来的 —— 原先
+  textOverall 与 stats 容器之间的 16dp 间隙就靠它，不搬的话第一行统计会紧贴主视觉。
+-->
+<TextView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/textOverall"
+    style="@style/TextAppearance.App.Headline"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="@dimen/space_lg"
+    tools:text="累计正确率 82%" />

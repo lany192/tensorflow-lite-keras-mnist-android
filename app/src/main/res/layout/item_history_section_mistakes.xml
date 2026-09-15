@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  「错题本」分区标题。与 item_history_section_sessions.xml 分开的理由见那个文件的注释。
+-->
+<TextView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/textSectionMistakes"
+    style="@style/TextAppearance.App.Title"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="@dimen/space_xl"
+    android:text="@string/history_mistakes_title" />

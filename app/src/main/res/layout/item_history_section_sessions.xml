@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  「历史练习」分区标题。
+
+  两个分区标题各占一个布局（本文件与 item_history_section_mistakes.xml）而不是共用一个：
+  文案留在 XML 里，由 getItemViewType 分流，适配器的 onBindViewHolder 里就不需要
+  按行型去选 R.string —— 那会把"哪一行该显示哪句话"这件纯展示的事挪进 Kotlin。
+-->
+<TextView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/textSectionSessions"
+    style="@style/TextAppearance.App.Title"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="@dimen/space_xl"
+    android:text="@string/history_sessions_title" />

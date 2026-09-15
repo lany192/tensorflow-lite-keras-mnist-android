@@ -63,10 +63,15 @@ fun reviewProblemsOf(
  *
  * 无法识别的年级名直接跳过，而不是抛异常：数据库里存的是 `Grade.name`，出现陌生值说明数据
  * 被外部改过，那种情况下整页崩掉是最糟的选择。
+ *
+ * **排序在这里做，因为 DAO 的 `GROUP BY s.grade` 没有 `ORDER BY`**：SQLite 返回的组顺序是任意的
+ * （实测近似按 `Grade.name` 的字典序，也就是一年级、五年级、四年级、二年级…）。界面上统计行
+ * 按年级从低到高才读得通，而且顺序必须是确定的 —— 否则同一份数据在两次查询里能排出不同的行序，
+ * `DiffUtil` 会把它当成一串 move。按 `ordinal` 排同时保证了与年级下拉框的顺序一致。
  */
-fun gradeStatsOf(rows: List<GradeStatsRow>): List<GradeStats> = rows.mapNotNull { row ->
-    gradeOf(row.grade)?.let { GradeStats(it, row.correct, row.total) }
-}
+fun gradeStatsOf(rows: List<GradeStatsRow>): List<GradeStats> = rows
+    .mapNotNull { row -> gradeOf(row.grade)?.let { GradeStats(it, row.correct, row.total) } }
+    .sortedBy { it.grade.ordinal }
 
 /** 同类转换，理由同上。 */
 fun sessionSummariesOf(rows: List<SessionRow>): List<SessionSummary> = rows.mapNotNull { row ->

@@ -48,6 +48,7 @@ class PureKotlinBoundaryTest {
             "PracticeRepository.kt",
             "HistorySummary.kt",
             "HistoryContract.kt",
+            "HistoryRows.kt",
             "HistoryViewModel.kt",
         )
     }

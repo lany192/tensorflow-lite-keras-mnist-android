@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  空态提示。文案是固定的，不需要绑定 —— 所以行模型里的 HistoryRow.Empty 是个 data object，
+  没有载荷。它同时替代了原先的 textOverall + containerStats（空态下三者一起消失）。
+-->
+<TextView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/textEmpty"
+    style="@style/TextAppearance.App.Body"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="@dimen/space_xl"
+    android:gravity="center"
+    android:text="@string/history_empty"
+    android:textColor="@color/on_surface_variant" />

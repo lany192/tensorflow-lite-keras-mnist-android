@@ -31,11 +31,11 @@
 | 界面技术 | XML 布局 + ViewBinding（`buildFeatures.viewBinding = true`），无 Compose |
 | 主题 | `Theme.Material3.Light`（`res/values/styles.xml` 的 `AppTheme`），**保留 ActionBar**但改为扁平浅色 |
 | 令牌 | `colors.xml`（颜色）、`dimens.xml`（间距与尺寸）、`styles.xml`（5 个 `TextAppearance` + 4 个按钮样式 + ActionBar 样式） |
-| 控件 | AppCompat `TextView` / `Spinner` / `ScrollView` + **显式 MaterialButton** |
+| 控件 | AppCompat `TextView` / `Spinner` / `RecyclerView` + **显式 MaterialButton** |
 | 形状 | 3 个 `<shape>` drawable（`bg_canvas` / `bg_block` / `ic_chevron_right`）+ 3 个 ColorStateList（`res/color/`） |
 | 自定义字体 | 无。字体族只用 `sans-serif`（默认）与 `sans-serif-medium` |
 | 深色模式 | **未适配**：主题是 `Light` 而非 `DayNight`，没有 `values-night` 目录 |
-| 列表 | 不用 `RecyclerView`：`activity_history` 用「`LinearLayout` + 运行时 inflate 子项」，数据量是个位到几十条 |
+| 列表 | 一律 `RecyclerView` + `ListAdapter`/`DiffUtil`（见 1.4）。全项目只有两处列表：学习记录页整页一个、练习页结算区的错题回顾一个 |
 | 页面骨架 | 三个 Activity 都是「根 `LinearLayout`（vertical）+ `background=@color/surface` + `paddingStart/End=page_padding_h`」 |
 | 页面标题 | 由 ActionBar 提供（`AndroidManifest.xml` 的 `android:label`），页面内部不重复标题 |
 | 二级页返回入口 | ActionBar 左上角的返回箭头（`setDisplayHomeAsUpEnabled(true)`），**页面内部没有返回按钮**（见 1.3） |
@@ -76,6 +76,45 @@
   挤矮 `weight=1` 的画布 → `onSizeChanged` 重建 `drawingBitmap` → **静默擦掉学生刚写的字迹**（见第 7 节）。
   ActionBar 与页面内容区相互独立，改它不参与画布的高度计算。
 - 练习页用返回箭头中途退出**不归档**已完成但未收尾的那组练习，这与系统返回键的既有取舍一致（见 `CLAUDE.md`）。
+
+### 1.4 列表一律用 RecyclerView
+
+全项目只有两处列表，两处都是 `RecyclerView` + `ListAdapter`（`DiffUtil`）：
+
+| 页面 | 列表 | 适配器 |
+|---|---|---|
+| 学习记录页 | **整页一个**列表，八种行型 | `HistoryAdapter` |
+| 练习页结算区 | 错题回顾 | `ReviewAdapter` |
+
+**为什么要「整页一个」**：记录页的分区标题、空态提示、主视觉本来就是同一个滚动流里的内容。
+三个列表各自一个 `RecyclerView`（`wrap_content` + 禁用嵌套滚动）能少改代码，但会把三个列表
+都变成不回收的普通容器，还引入嵌套滚动这个易碎结构。分区标题因此是**行型**，不是静态控件。
+
+**约定**：
+
+- **「状态 → 行」的映射写在纯 Kotlin 里**（`HistoryRows.kt`），不写在 Activity 里：
+  空态显示什么、分区为空时标题要不要出现、提示排在哪，这些分支以前只能靠真机肉眼验，
+  现在是纯函数，由 `HistoryRowsTest` 钉住。行里**只放原始数据**（`createdAt` 保持毫秒、`percent`
+  保持整数），格式化留给适配器 —— `DiffUtil` 的内容比较跑在后台线程，非线程安全的
+  `SimpleDateFormat` 绝不能从那里可达。
+- **`DiffUtil.ItemCallback.areItemsTheSame` 第一件事是先判行型**，再比该行型自己的键
+  （年级 / 自增主键 / 题目身份对）。DiffUtil 对重复键**不抛异常**，跨行型撞键的后果是
+  RecyclerView 拿错误的布局去绑同一个 holder —— 静默错误。
+- **`stateRestorationPolicy = PREVENT_WHEN_EMPTY` 照惯例配上，但要知道它当前不承重。**
+  真机实测（旋屏 / 进程被杀后重建，各测一次开与关）：**两种路径下它都不改变结果**。
+  旋屏本来就保得住位置，原因是 `HistoryViewModel` 跨配置变更存活，`onCreate` 里的
+  `render(viewModel.state.value)` 在状态恢复之前就已经提交过一次行列表；进程被杀后重建
+  则两种情况下都回到顶部。保留它是为了 render 的时机一旦变化（不再同步渲染、或改成分页）
+  时滚动位置不会无声地丢 —— **不要据此认为这条设置是当前滚动位置的保障**。
+- **行间距靠 item 布局根节点的 `layout_marginTop`**，与改造前的 `container.marginTop + item.marginTop`
+  之和逐项对齐。**禁止 `DividerItemDecoration`、禁止分割线**（与第 5 节、第 10 节一致）。
+- **`itemAnimator = null`**：改造前的实现是 `removeAllViews` + `addView`，本就没有动画；
+  且本文档没有动效语言（无阴影、无 elevation），默认的淡入淡出属于未设计的视觉变化。
+- 分页不做复杂 diff：数据量是个位到几十条，`ListAdapter` 的默认 diff 已经足够，
+  不要为它引入 `AsyncListDiffer` 的自定义线程池或分页库。
+
+**练习页那一处另有硬约束**（见第 7 节）：它必须留在 `groupResult` 内且保持 `0dp` + `weight=1`，
+由 `PracticeLayoutConstraintTest` 强制。
 
 ---
 
@@ -301,8 +340,14 @@
 3. **也不要改 `textCheckHint` 的 `TextAppearance` 档位**——字号变化等价于行高变化，
    会静态地改变画布高度。改字号前先确认画布实际高度仍远大于 168dp。
 4. 按钮行所有按钮统一 `minHeight = touch_target`(48dp)，行高恒定，因此按钮的显隐不影响画布。
-5. `activity_main` / `activity_history` 没有 `weight` 画布，可以自由使用 `GONE`
-   （`textEmpty`、`textMistakesBeyond`、`titleSessions`、`titleMistakes` 就是这么做的）。
+5. `activity_main` / `activity_history` 没有 `weight` 画布，可以自由使用 `GONE`。
+   记录页整页是 `RecyclerView`，条件显示已经变成**有没有这一行**（`HistoryRow.Empty`、
+   `HistoryRow.SectionSessions` 等等），连 `GONE` 都不需要了 —— 见 1.4。
+6. **结算区的错题回顾列表（`recyclerReview`）在练习页上，所以它归这条规则管**：
+   它安全的原因是整体待在作答态 `GONE` 的 `groupResult` 内，且高度由 `0dp` + `weight=1` 定死
+   （`weight` 给的 `EXACTLY` 规格让 `RecyclerView` 不测量子项，高度与行数无关）。
+   **挪出 `groupResult`、或改成 `wrap_content`，它就变成又一个能挤动画布的兄弟控件。**
+   `PracticeLayoutConstraintTest` 直接解析布局 XML 把这条钉住。
 
 ---
 
@@ -384,6 +429,11 @@
 - 禁止在 Kotlin 代码里硬编码用户可见文案。
 - 禁止新增 `values-night` 或深色资源而不同步更新本文档——当前的 Light-only 是明确现状，不是疏漏。
 - 禁止改用 `NoActionBar` 而不补齐 inset 处理（见 1.1）。
+- **禁止给 `RecyclerView` 加 `DividerItemDecoration` 或任何 decoration 来画分隔线** ——
+  这是引入 `RecyclerView` 唯一会"顺手带进来"的东西，而本项目**没有分割线**（见第 5 节）。
+  行间距只用 item 布局根节点的 `layout_marginTop`；分组只用 `bg_block` 的软色块。
+- **禁止把列表退回「容器 + 运行时 inflate 子项」**，也禁止在一个页面里嵌套两个滚动容器
+  （见 1.4；记录页整页一个 `RecyclerView`，分区标题是行型）。
 
 ---
 
@@ -395,8 +445,9 @@
 |---|---|---|
 | 无深色模式（`Light` 而非 `DayNight`） | 系统深色下界面仍为浅色 | 建 `values-night/`，逐项核对本文档所有色对的对比度，再改父主题 |
 | `textCheckHint` / `textHint` / `textFeedback` 在作答态写入空串以预留行高 | 练习页约有 70dp 的高度被预留位占用，无法让给画布 | 这是**刻意的**：不预留就会在结果出现时挤动画布、清空笔迹。除非改动 `onSizeChanged` 的重建策略，否则不要动 |
-| `item_grade_stat` / `item_history_session` 是单行整串文本（`"%1$s　答对 %2$d/%3$d"`） | 无法把年级名左对齐、成绩右对齐做成两栏 | 改成两 TextView 需要同时改 `HistoryActivity.renderStats` / `renderSessions` |
-| `outline` 色已定义但未被使用 | 读代码时会疑惑它是否该用 | 需要列表分隔线时再用，否则可删 |
+| `item_grade_stat` / `item_history_session` 是单行整串文本（`"%1$s　答对 %2$d/%3$d"`） | 无法把年级名左对齐、成绩右对齐做成两栏 | 改成两 TextView 只需改 `HistoryAdapter.onBindViewHolder` 与对应 item 布局（列表改造后不再需要动 Activity） |
+| `outline` 色已定义但未被使用 | 读代码时会疑惑它是否该用 | **不会再用于列表分隔线**（列表行距靠 `layout_marginTop`，见 1.4 / 第 10 节）。若另有用处再用，否则可删 |
+| 两个适配器的 `stateRestorationPolicy` / `itemAnimator` / `layoutManager` 装配在各 Activity 里重复 | 新增列表页时要记得照抄这三行，漏掉是静默失效（白屏或滚动位置丢失） | 抽一个基类或扩展函数；当前只有两处，暂不值得 |
 | ActionBar 标题来自 `app_name`（"MnistTFLite"） | 首页标题是包名风格，不是中文产品名 | 改 `strings.xml` 的 `app_name`，或给 `MainActivity` 单独设 `android:label` |
 | `constraintlayout` 依赖已引入但代码未使用 | 读代码时无法判断项目用哪套布局体系 | 明确它是预留还是传递依赖，或移除 |
 
@@ -425,7 +476,13 @@
 返回  二级页统一用 ActionBar 左上角的返回箭头，页面内容区不设返回按钮
       ActionBar 起排位置 = page_padding_h，与页面内容左边缘对齐
 
+列表  一律 RecyclerView + ListAdapter/DiffUtil；记录页整页一个，分区标题是行型
+      行间距 = item 根布局的 layout_marginTop │ 禁 DividerItemDecoration（没有分割线）
+      stateRestorationPolicy = PREVENT_WHEN_EMPTY 照惯例配上（实测当前不承重，见 1.4）
+      itemAnimator = null；「状态 → 行」映射写在纯 Kotlin（HistoryRows.kt）并有单测
+
 铁律  练习页画布周围的条件显示用 INVISIBLE，不用 GONE —— 否则 onSizeChanged 会清空笔迹
+      练习页的列表必须留在 groupResult 内且 0dp+weight=1（PracticeLayoutConstraintTest 钉住）
       按钮的 backgroundTint/textColor 必须用 res/color/ 的 selector，否则禁用态不可见
       颜色与文案同源：不解析 text 内容判断对错
 
@@ -438,4 +495,12 @@
 *基于当前仓库实际代码（`app/src/main/res/`、三个 Activity 的 `render()`）逐项核对生成，
 并在真机（1080×2340）上逐页截图验证过：识别页 / 练习页 / 学习记录页（空态与有数据态），
 含「写字 → 提交 → 确认」全程画布尺寸不变的回归验证。*
+
+**2026-09-15 两次改版的视觉差异记录**（其余为纯重构，渲染结果不变）：
+
+1. 二级页返回入口从记录页底部移到 ActionBar 左上角（1.3）。
+2. 列表改用 `RecyclerView`（1.4）。**唯一的有意视觉变化是统计行的年级顺序**：
+   原先 `GROUP BY s.grade` 没有 `ORDER BY`，行序由 SQLite 决定（实测近似按枚举名字典序），
+   现在固定按 `Grade.ordinal` 从低到高，与年级下拉框一致（见 `HistorySummary.gradeStatsOf`）。
+   记录页各行的间距、字号、字色与改造前逐项一致（已按 `uiautomator` 的 bounds 对账）。
 *识别链路、MVI 与持久化的工程约束见 `AGENTS.md` / `CLAUDE.md`，本文只覆盖界面。*

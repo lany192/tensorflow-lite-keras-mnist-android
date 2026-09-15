@@ -15,7 +15,7 @@
 
 - 训练模型：`cd python && python keras_mnist_tflite.py` → 在当前工作目录生成 `model.tflite` → 复制到 `app/src/main/assets/` 供应用加载。
 - Python 依赖：`pip install -r python/requirements.txt`（使用阿里云镜像：`https://mirrors.aliyun.com/pypi/simple/`）。
-- Android：使用标准 Gradle（`./gradlew assembleDebug`、`./gradlew test`）。`./gradlew test` 是 JVM 基线测试，覆盖切分、题目生成和三个状态机，必须保持全绿；它覆盖 `PureKotlinBoundaryTest` 白名单中的所有内容。该命令**不会**执行 Room 相关测试（见“持久化”）。数据库测试需要连接设备：`./gradlew connectedAndroidTest`。APK 输出路径：`app/build/outputs/apk/debug/app-debug.apk`。
+- Android：使用标准 Gradle（`./gradlew assembleDebug`、`./gradlew test`）。`./gradlew test` 是 JVM 基线测试，覆盖切分、题目生成、三个状态机、学习记录页的行映射（`HistoryRowsTest`）和练习页的列表布局约束（`PracticeLayoutConstraintTest`），必须保持全绿；它覆盖 `PureKotlinBoundaryTest` 白名单中的所有内容。该命令**不会**执行 Room 相关测试（见“持久化”）。数据库测试需要连接设备：`./gradlew connectedAndroidTest`。APK 输出路径：`app/build/outputs/apk/debug/app-debug.apk`。
 
 ## 容易踩坑
 
@@ -30,8 +30,11 @@
 - `FingerPaintView.inputEnabled` 是冻结画布的唯一方式。`setEnabled(false)` 在这里不起作用：该 View 无条件覆写了 `onTouchEvent`，并且始终返回 true。
 - `FingerPaintView.clear()` 必须保持空安全。`drawingBitmap` 在 `onSizeChanged` 中创建，因此在首次布局前清空画布——`MathPracticeActivity.onCreate` 会这样做以展示新题——会命中空 bitmap 并导致应用崩溃。清空尚未布局的画布是合法操作；只是此时还没有 bitmap 需要重建。
 - 练习画布周围任何在 `GONE` 和 `VISIBLE` 之间切换的控件都会改变画布尺寸：画布占用 `weight=1`，`onSizeChanged` 会重建 `drawingBitmap`，从而静默擦掉学生刚写的内容——他们会认为“提交吃掉了我的答案”。检查提示使用 `INVISIBLE` 来保留其行高。新增的任何同级控件也要做同样处理，或者预留固定高度。
+- **练习页结算区的错题回顾列表（`recyclerReview`）必须留在 `groupResult` 内，并保持 `0dp` + `weight=1`。** 它安全的原因不是“它是个 RecyclerView”，而是整个结算区在作答态是 `GONE`，且 `weight` 给的 `EXACTLY` 规格让 RecyclerView 不测量子项——高度与行数无关。挪出 `groupResult` 或改成 `wrap_content`，它就变成又一个能挤动画布、擦掉笔迹的兄弟控件。`PracticeLayoutConstraintTest` 直接解析布局 XML 把这条钉住；`app/build.gradle.kts` 里已把 `src/main/res/layout` 声明为单测任务的输入，否则改完布局 `./gradlew test` 会直接 UP-TO-DATE 跳过，那条测试就停在旧结论上。
 - 判定答案必须按**数值**比较，绝不能按字符串比较——学生写 “068” 表示 68，而且手写中的前导零很常见。当前实现使用 `decimalValueOf(...)` 和 `BigDecimal.compareTo` 做精确比较，因此 `"068"`、`"68.0"` 与 68 等价；不要改回 `Double` 或字符串比较。
 - 上一条的推论：**控件的 XML 默认可见性必须与 `render()` 为初始状态生成的可见性一致。** `render()` 首次在 `onCreate` 中运行，之后每次 `onStart`（`repeatOnLifecycle`）都会再次运行；如果默认值不一致，第一次 render 就会翻转兄弟控件的可见性，压缩画布并吃掉学生的笔迹。`textCheckHint` 使用 `invisible` 而不是 `gone`，就是这条规则的实际应用。
+- **列表一律 `RecyclerView` + `ListAdapter`/`DiffUtil`**，全项目只有两处：学习记录页整页一个、练习页结算区的错题回顾一个。**记录页的「状态 → 行」映射在纯 Kotlin 的 `HistoryRows.kt`**（`HistoryState.rows` 是**派生属性**——加进主构造参数会把行列表存第二份，并扰动 `StateFlow` 的 conflate）；行里只放原始数据，格式化留在适配器里，因为 `DiffUtil` 的内容比较跑在后台线程，而 `SimpleDateFormat` 不是线程安全的。`HistoryRows.kt` 已加入 `PureKotlinBoundaryTest` 白名单；`HistoryAdapter.kt` / `ReviewAdapter.kt` 含 `androidx.recyclerview`，**绝不能**加入。行间距靠 item 布局根节点的 `layout_marginTop`，不要给 RecyclerView 加 `DividerItemDecoration`。
+- **列表适配器在 `init` 里设 `stateRestorationPolicy = PREVENT_WHEN_EMPTY`**，但**别以为它在承重**：真机实测（旋屏 / 进程被杀后重建，各开关一次）**两种路径下它都不改变结果**。旋屏本来就保得住位置——`HistoryViewModel` 跨配置变更存活，`onCreate` 里的 `render(viewModel.state.value)` 在状态恢复之前已提交过一次行列表；进程被杀重建则两种情况下都回到顶部。保留它是为了 render 时机一旦变化时滚动位置不会无声地丢。
 - `MathPracticeActivity` 被刻意移除了 `configChanges`：现在状态由 ViewModel 持有，所以旋转、多窗口、折叠屏和字体缩放都会重建 Activity。题目、进度、年级、作答记录和当前阶段会保留；画布笔迹和 TFLite 解释器不会保留（前者因为 `onSizeChanged` 重建 bitmap，后者因为 `KerasTFLite` 会从 assets 重新复制模型）。注意，`configChanges` 本来也从未保护画布——它只保护状态机，而状态机现在由 ViewModel 拥有。
 - 年级 `Spinner` 是所选年级的**第二个真值来源**（它会恢复自己的选择）。`render()` 只在选择与 `state.grade` 不一致时写入它，而 `MathPracticeViewModel` 对已经是当前值的 `SelectGrade` 不做处理——这道闸门阻止了 render→dispatch→render 循环，同时也吸收了 Spinner 初始 `position = 0` 的回调。不要移除它。
 - 墨迹/背景阈值（32）**只**存在于 `SegmentConfig.inkThreshold`。`MnistPreprocessor` 完全不做阈值处理——它只裁剪切分器交给它的框。如果任何地方再出现一个阈值，裁剪框和归一化对“什么算墨迹”的认知就会不一致。

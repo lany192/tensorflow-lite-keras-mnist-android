@@ -8,6 +8,10 @@ appcompat = "1.7.1"
 material = "1.13.0"
 activity = "1.13.0"
 constraintlayout = "2.2.1"
+# material 1.13.0 只把 recyclerview **传递**带到 1.2.1（可查已构建 APK 里的
+# META-INF/androidx.recyclerview_recyclerview.version），那是 2021 年的版本。
+# 列表改用 RecyclerView 之后它是直接依赖，所以显式声明并抬高版本，不再吃传递版本。
+recyclerview = "1.4.0"
 tensorflow = "2.17.0"
 # 与 core-ktx 传递进来的 lifecycle 版本对齐，避免同一组库出现两个版本
 lifecycleRuntimeKtx = "2.10.0"
@@ -31,6 +35,7 @@ androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version
 material = { group = "com.google.android.material", name = "material", version.ref = "material" }
 androidx-activity = { group = "androidx.activity", name = "activity", version.ref = "activity" }
 androidx-constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "constraintlayout" }
+androidx-recyclerview = { group = "androidx.recyclerview", name = "recyclerview", version.ref = "recyclerview" }
 tensorflow = { module = "org.tensorflow:tensorflow-lite", version.ref = "tensorflow" }
 # 只需要 runtime-ktx（lifecycleScope / repeatOnLifecycle）。
 # viewModels() 扩展已并入 androidx.activity:activity，StateFlow / Channel 由 coroutines-core 提供，

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
   错题本的一行：上面是题目，下面是学生写成了什么、错了几次。
-  由 HistoryActivity.renderMistakes() 运行时 inflate 进 containerMistakes。
+  由 HistoryAdapter 绑进学习记录页的 RecyclerView。
 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"

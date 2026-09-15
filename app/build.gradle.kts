@@ -3,6 +3,9 @@ plugins {
     alias(libs.plugins.ksp)
 }
 
+/** 布局目录。会被 PracticeLayoutConstraintTest 直接读，见文件末尾的 inputs 声明。 */
+val layoutsDir = layout.projectDirectory.dir("src/main/res/layout")
+
 android {
     namespace = "com.github.lany192.mnist"
     // core-ktx 1.19.0 要求编译期 API ≥37。只动 compileSdk：它决定能调用哪些新 API，
@@ -48,12 +51,20 @@ ksp {
     arg("room.schemaLocation", "$projectDir/schemas")
 }
 
+// PracticeLayoutConstraintTest 直接读 src/main/res/layout 下的 XML 做断言（画布铁律）。
+// 但 res 并**不是**单元测试任务的输入 —— 不显式声明的话，改完布局再跑 ./gradlew test 会直接
+// UP-TO-DATE 跳过，那条测试就永远停在旧结论上，等于没有。声明成输入后，改布局就会重跑。
+tasks.withType<Test>().configureEach {
+    inputs.dir(layoutsDir).withPropertyName("layoutXml")
+}
+
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
     implementation(libs.androidx.activity)
     implementation(libs.androidx.constraintlayout)
+    implementation(libs.androidx.recyclerview)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.androidx.room.runtime)

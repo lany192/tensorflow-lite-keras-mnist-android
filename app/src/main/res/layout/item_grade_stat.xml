@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  按年级的统计行。由 HistoryActivity.renderStats() 运行时 inflate 进 containerStats。
+  按年级的统计行。由 HistoryAdapter 绑进学习记录页的 RecyclerView。
 
   android:id 与文本格式由 Kotlin 侧写入（history_grade_stat_format），改这里的结构前先看那边。
+  layout_marginTop 就是这一行与上一行的间距 —— RecyclerView 里没有分隔线，行距全靠它。
 -->
 <TextView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"

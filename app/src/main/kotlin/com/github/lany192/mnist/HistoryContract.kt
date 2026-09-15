@@ -17,6 +17,15 @@ data class HistoryState(
     /** 错题本超出一次重做上限的条数。界面要提示它，否则学生会以为错题丢了。 */
     val mistakesBeyondReviewLimit: Int
         get() = (mistakes.size - MathProblemGenerator.DEFAULT_COUNT).coerceAtLeast(0)
+
+    /**
+     * 学习记录页的行列表，界面直接把它交给 `RecyclerView` 的适配器。
+     *
+     * **必须是派生属性，绝不能加进主构造参数**：`StateFlow` 按 `equals` 做 conflate，
+     * 主构造参数会进入 `equals`/`hashCode`，等于把行列表存了第二份，还会让"数据没变"的
+     * 发射变成"变了"。与 [overall]、[mistakesBeyondReviewLimit] 同构。
+     */
+    val rows: List<HistoryRow> get() = historyRowsOf(this)
 }
 
 sealed interface HistoryIntent {

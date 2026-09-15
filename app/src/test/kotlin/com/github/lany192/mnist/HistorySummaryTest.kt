@@ -154,6 +154,27 @@ class HistorySummaryTest {
         assertEquals(Grade.FIRST, stats.single().grade)
     }
 
+    /**
+     * 统计按年级从低到高排。
+     *
+     * 排序放在这里而不是界面上，是因为 DAO 的 `GROUP BY s.grade` **没有 `ORDER BY`**：
+     * SQLite 返回的组顺序是任意的（实测近似按枚举名的字典序，也就是一、五、四、二、六、三年级）。
+     * 界面按这个顺序渲染，"统计"这一栏就没法读了；而且顺序不确定意味着同一份数据两次查询能排
+     * 出不同的行序，列表的差异计算会把它们当成一串 move。
+     */
+    @Test
+    fun gradeStatsOf_sortsByGradeOrder_regardlessOfInputOrder() {
+        val rows = listOf(
+            GradeStatsRow(grade = "FOURTH", correct = 1, total = 2),
+            GradeStatsRow(grade = "FIRST", correct = 1, total = 2),
+            GradeStatsRow(grade = "SECOND", correct = 1, total = 2),
+        )
+
+        val stats = gradeStatsOf(rows)
+
+        assertEquals(listOf(Grade.FIRST, Grade.SECOND, Grade.FOURTH), stats.map { it.grade })
+    }
+
     @Test
     fun sessionSummariesOf_mapsSourceAndGrade() {
         val rows = listOf(

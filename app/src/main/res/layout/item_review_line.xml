@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  练习页结算区的一行错题回顾。
+
+  行距必须保留 space_xs：原先整块是一个 TextView，用 lineSpacingExtra 撑出行距；拆成
+  一行一个 TextView 之后，这个属性只能加在每个 item 上，否则整块会变矮。
+
+  没有 marginTop：行与行之间本来就靠 lineSpacingExtra 分隔，再加边距会叠成双份。
+-->
+<TextView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/textReviewLine"
+    style="@style/TextAppearance.App.Body"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:lineSpacingExtra="@dimen/space_xs"
+    tools:text="第 2 题：23 + 45 = 68，你写的是 96" />

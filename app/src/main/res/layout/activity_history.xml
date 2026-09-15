@@ -20,7 +20,7 @@
     android:paddingTop="@dimen/page_padding_v"
     android:paddingEnd="@dimen/page_padding_h"
     android:paddingBottom="@dimen/page_padding_v"
-    tools:context=".HistoryActivity">
+    tools:context=".history.HistoryActivity">
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerHistory"

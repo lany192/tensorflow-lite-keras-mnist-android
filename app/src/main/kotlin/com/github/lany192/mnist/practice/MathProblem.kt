@@ -1,0 +1,39 @@
+package com.github.lany192.mnist.practice
+
+
+/**
+ * 练习难度等级。
+ *
+ * **枚举顺序必须与 `R.array.grade_names` 完全一致** —— 界面用 Spinner 的 position 直接映射到
+ * 这里（`Grade.values()[position]`），两处一旦错位，选"一年级"会出六年级的题，而且不会有任何
+ * 编译期报错。标签本身刻意不放在这个枚举里，否则会和 strings.xml 形成两份真值来源。
+ */
+enum class Grade { FIRST, SECOND, THIRD, FOURTH, FIFTH, SIXTH }
+
+/**
+ * 一道口算题。
+ *
+ * @param expression 等号**左边**的题面，如 `"23 + 45"`、`"3.5 + 1.5"`、`"1/4 + 3/4"`、`"80 的 25%"`。
+ *   刻意不含 `"= ?"`，由界面拼接 —— 这样单元测试可以直接把 expression 丢给独立求值器验算。
+ * @param answer 标准答案。当前生成器仍只构造 1..9999 的整数：识别链路已经能读小数点，
+ *   但把答案类型扩展成小数会同时牵动出题器、Intent 和 Room schema，属于独立改动；
+ *   答案也不会是 0，因为画布上单独写一个 "0" 是闭合环，在部分切分路径上与"什么都没写"难以区分。
+ */
+data class Problem(val expression: String, val answer: Int)
+
+/**
+ * 把两个平行数组还原成题目列表；长度不一致返回 `null`。
+ *
+ * 为什么用两个数组跨页面传题、而不是让 [Problem] 实现 `Parcelable`：`android.os.Parcel` 是
+ * `android.*`，会让**本文件掉出 `PureKotlinBoundaryTest` 的白名单**，连带 `MathProblemGeneratorTest`
+ * 一起失去 JVM 可测性。手写 Parcelable 实现同样不行。
+ *
+ * 返回 `null` 而不是抛异常：两个 Intent extra 是彼此独立的字段，长度没有结构性保证，
+ * 调用方拿到 `null` 直接结束页面即可。
+ */
+fun problemsOf(expressions: List<String>, answers: List<Int>): List<Problem>? =
+    if (expressions.size != answers.size) {
+        null
+    } else {
+        expressions.zip(answers) { expression, answer -> Problem(expression, answer) }
+    }

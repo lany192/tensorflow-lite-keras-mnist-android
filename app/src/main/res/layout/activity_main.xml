@@ -16,7 +16,7 @@
     android:paddingTop="@dimen/page_padding_v"
     android:paddingEnd="@dimen/page_padding_h"
     android:paddingBottom="@dimen/page_padding_v"
-    tools:context=".MainActivity">
+    tools:context=".recognize.MainActivity">
 
     <!-- clipToOutline 让方形的白色画布被裁成圆角。只影响绘制，不影响导出位图 -->
     <FrameLayout
@@ -25,7 +25,7 @@
         android:background="@drawable/bg_canvas"
         android:clipToOutline="true">
 
-        <com.github.lany192.mnist.FingerPaintView
+        <com.github.lany192.mnist.recognize.FingerPaintView
             android:id="@+id/finger_paint_view"
             android:layout_width="match_parent"
             android:layout_height="match_parent"

@@ -21,7 +21,7 @@ Android 端负责切分和上下文判断：
 3. `MnistPreprocessor` 对每个字形包围盒做 MNIST 风格归一化，11 类模型最终确认它是数字还是小数点。
 
 `InkSegmenter` 的算法可用 `./gradlew test` 在 JVM 上直接验证，回归用例在
-`app/src/test/kotlin/com/github/lany192/mnist/InkSegmenterTest.kt`。
+`app/src/test/kotlin/com/github/lany192/mnist/recognize/InkSegmenterTest.kt`。
 
 注意：识别精度几乎完全由「笔画宽度 / 数字高度」的比例决定（实测安全区 ≤0.19，0.2~0.25 开始退化，0.3 以上崩塌），
 而不是由切分算法或模型决定。笔宽固定为 32px，所以**数字写得大一些、位数少一些，准确率明显更高**：

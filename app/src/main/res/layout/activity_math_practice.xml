@@ -31,7 +31,7 @@
     android:paddingTop="@dimen/practice_padding_v"
     android:paddingEnd="@dimen/page_padding_h"
     android:paddingBottom="@dimen/practice_padding_v"
-    tools:context=".MathPracticeActivity">
+    tools:context=".practice.MathPracticeActivity">
 
     <!-- 年级选择与进度：结束态也保留，方便学生直接换年级重开 -->
     <LinearLayout
@@ -96,7 +96,7 @@
             android:clipToOutline="true"
             android:minHeight="@dimen/canvas_practice_min_height">
 
-            <com.github.lany192.mnist.FingerPaintView
+            <com.github.lany192.mnist.recognize.FingerPaintView
                 android:id="@+id/fingerPaintView"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"

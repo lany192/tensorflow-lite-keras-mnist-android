@@ -11,6 +11,11 @@
 
 模型仍然只分类单个字符，多字符能力完全位于 Android 侧。
 
+源码按**功能模块**分了子包：`recognize/`（识别页与整条识别链路）、`practice/`（数学练习页）、
+`history/`（学习记录页）、`data/`（Room 持久化）。测试源码镜像同样的结构。
+`R` 与 ViewBinding 生成类仍在 `com.github.lany192.mnist` 根包 —— 那是由 `namespace` 决定的，
+与源码放在哪个子包无关。
+
 ## 工作流
 
 - 训练模型：`cd python && python keras_mnist_tflite.py` → 在当前工作目录生成 `model.tflite` → 复制到 `app/src/main/assets/` 供应用加载。
@@ -40,6 +45,16 @@
 - 墨迹/背景阈值（32）**只**存在于 `SegmentConfig.inkThreshold`。`MnistPreprocessor` 完全不做阈值处理——它只裁剪切分器交给它的框。如果任何地方再出现一个阈值，裁剪框和归一化对“什么算墨迹”的认知就会不一致。
 - 对于画布上的单个连通段，颈部切分守卫会退化为纯粹的宽高比测试（`W < splitAspectFactor * H`，默认 1.35），所以正常的 0–9 手写永远不会被切开。这是比例属性，不是结构保证——降低 `splitAspectFactor`，或者把数字写得足够扁以至于超过 1.35，仍然会触发切分。`InkSegmenterTest.singleDigit_*` 固定了这一点。
 - `FingerPaintView.strokeWidth` 不是**外观选择**——实测准确率主要由 `strokeWidth / 手写数字高度` 的比例决定，而不是由切分算法或模型决定：安全区间是 ≤0.19，0.20–0.25 开始退化，≥0.30 会崩塌。当前的 32f 对大约 170–800px 高的数字能保持该比例处于安全区间。把它改回接近 64f 会让 4 位以上数字串不可用（实测 4 位数整串准确率会从 87% 降到 7%）。修改前必须重新测量。
+- **搬动源码包时要同时改三处「不在 Kotlin 里」的引用**，它们都不会给出编译错误：
+  1. `AndroidManifest.xml` 里的 activity 是**相对类名**（`.recognize.MainActivity`），写错的后果是点入口时
+     `ActivityNotFoundException`，编译期一声不吭；
+  2. 布局里的自定义 View 必须写**全限定名**（`com.github.lany192.mnist.recognize.FingerPaintView`），
+     写错是运行时 inflate 崩溃 —— `FingerPaintView` 与其它 Kotlin 文件没有任何代码耦合，接线只在这两行 XML 里；
+  3. Room 导出 schema 的目录名就是 `@Database` 类的全限定名（`app/schemas/<全限定名>/`，**已被 git 跟踪**）。
+     改了包名却不 `git mv` 这个目录，Room **不报错**，只在新路径再写一份，旧目录烂在仓库里。
+     已确认 `identityHash` 由 schema 内容决定、与包名无关，所以搬包**不会**触发虚假迁移。
+- **子包里的文件引用 `R` 必须显式 `import com.github.lany192.mnist.R`。** Kotlin 不自动导入 `namespace` 包，
+  而 `import com.github.lany192.mnist.databinding.XxxBinding` 本来就是全限定路径、不受搬包影响 —— 所以漏的通常只有 `R`。
 - `settings.gradle.kts` 中的 Maven 仓库使用阿里云镜像——不要移除；这是中国大陆网络访问所必需的。
 - Gradle daemon JVM toolchain 固定在 `gradle/gradle-daemon-jvm.properties` 中的 17 版本（本地已安装；缺失时会自动 provision）。
 - venv 的 pip 可能在部分升级后损坏；使用 `https://bootstrap.pypa.io/pip/3.9/get-pip.py` 修复（该 venv 使用 Python 3.9）。
@@ -49,6 +64,8 @@
 每个页面（`MainActivity`、`MathPracticeActivity`、`HistoryActivity`）都采用 MVI：每个页面都有一个 `XxxContract.kt`（State / Intent / Effect）和一个 `XxxViewModel.kt`。Activity 只做三件事——把输入转换成 Intent、订阅 State 并渲染、执行一次性 Effect。
 
 - **`*Contract.kt` 和 `*ViewModel.kt` 不得 `import android.`**（`androidx.*` 可以——`androidx.lifecycle.ViewModel` 是普通 JVM 类）。该约束由 `PureKotlinBoundaryTest` 强制执行。一旦 ViewModel 接触 `Bitmap` 或 `Context`，它就会完全脱离 JVM 单元测试——本项目没有 Robolectric。
+白名单按**相对路径**索引（源码分了子包），并且每个源文件都必须被明确归类为纯 Kotlin 或 Android 依赖 ——
+新增文件忘了分类会直接让 `./gradlew test` 失败，而不是静默漏检。
 - **状态机 ViewModel 有意保持同步。** `MutableStateFlow.value =` 和 `Channel.trySend` 从不会挂起，所以 `dispatch()` 返回时状态已经就位，测试可以直接断言 `state.value`——不需要 `kotlinx-coroutines-test`，也不需要 `TestDispatcher`。更硬的理由是：JVM 测试中不存在 `Dispatchers.Main`（`coroutines-android` 是 Android 产物），所以一旦出现 `viewModelScope.launch`，测试会以 `Module with the Main dispatcher had failed to initialize` 失败，而不是编译失败。
 
   异步操作的分界线是**“这个操作的结果能否被重新推导出来？”**：

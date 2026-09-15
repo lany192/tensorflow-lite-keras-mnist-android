@@ -286,7 +286,7 @@
 <FrameLayout
     android:background="@drawable/bg_canvas"
     android:clipToOutline="true" ...>
-    <com.github.lany192.mnist.FingerPaintView ... android:background="@color/surface_raised" />
+    <com.github.lany192.mnist.recognize.FingerPaintView ... android:background="@color/surface_raised" />
 </FrameLayout>
 ```
 

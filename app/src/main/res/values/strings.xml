@@ -38,7 +38,6 @@
 
     <!-- 学习记录 -->
     <string name="action_history">学习记录</string>
-    <string name="action_back">返回</string>
     <string name="history_empty">还没有练习记录，做完一组题就会出现在这里</string>
     <string name="history_overall_format">累计正确率 %1$d%%</string>
     <string name="history_sessions_title">历史练习</string>

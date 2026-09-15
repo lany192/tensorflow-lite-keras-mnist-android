@@ -3,6 +3,7 @@ package com.github.lany192.mnist
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.view.MenuItem
 import android.view.View
 import android.widget.AdapterView
 import android.widget.Toast
@@ -41,6 +42,12 @@ class MathPracticeActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityMathPracticeBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        // 二级页统一的返回入口：ActionBar 左上角的返回箭头（见 DESIGN.md 1.3）。
+        // 刻意不放进页面内容区 —— 首行已经被「年级 + 进度」占满，往里加控件会撑高那一行、
+        // 挤矮 weight=1 的画布，触发 onSizeChanged 重建位图并擦掉学生刚写的字迹。
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+
         val interpreter = KerasTFLite(this)
         tflite = interpreter
         recognizer = MnistRecognizer(interpreter)
@@ -62,6 +69,18 @@ class MathPracticeActivity : AppCompatActivity() {
                 launch { viewModel.effect.collect(::handleEffect) }
             }
         }
+    }
+
+    /**
+     * ActionBar 左上角的返回箭头。与系统返回键同效：中途退出不归档，
+     * 已完成但未收尾的那组练习会丢失（既有取舍，见 CLAUDE.md「持久化」）。
+     */
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        if (item.itemId == android.R.id.home) {
+            finish()
+            return true
+        }
+        return super.onOptionsItemSelected(item)
     }
 
     override fun onDestroy() {

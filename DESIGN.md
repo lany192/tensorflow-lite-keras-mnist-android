@@ -38,6 +38,7 @@
 | 列表 | 不用 `RecyclerView`：`activity_history` 用「`LinearLayout` + 运行时 inflate 子项」，数据量是个位到几十条 |
 | 页面骨架 | 三个 Activity 都是「根 `LinearLayout`（vertical）+ `background=@color/surface` + `paddingStart/End=page_padding_h`」 |
 | 页面标题 | 由 ActionBar 提供（`AndroidManifest.xml` 的 `android:label`），页面内部不重复标题 |
+| 二级页返回入口 | ActionBar 左上角的返回箭头（`setDisplayHomeAsUpEnabled(true)`），**页面内部没有返回按钮**（见 1.3） |
 
 ### 1.1 为什么保留 ActionBar
 
@@ -59,6 +60,22 @@
 
 **约定**：`Theme.Material3.Light` 只作为**组件底座**使用。不要因为换了主题就去用 `MaterialCardView`、
 `elevation`、`colorSurfaceContainer*` 梯度——本文档的颜色角色已把 container 梯度全部压平。
+
+### 1.3 二级页的返回入口放在 ActionBar 左上角
+
+两个二级页（练习页 `MathPracticeActivity`、学习记录页 `HistoryActivity`）的返回入口统一是
+**ActionBar 左上角的返回箭头**，由 `supportActionBar?.setDisplayHomeAsUpEnabled(true)` 开启，
+点击落在各 Activity 的 `onOptionsItemSelected`（`android.R.id.home`）里，行为与系统返回键一致。
+
+**约定**：
+
+- **不要在页面内容区新增返回按钮。** 学习记录页原先在底部按钮行有一个「返回」文字按钮，已移除；
+  同一页出现两个返回入口会让「返回」看起来像两种不同的操作。
+- 尤其不要把返回按钮加到**练习页的首行**：那一行已被「年级标签 + Spinner + 进度」占满，
+  再塞一个控件会撑高这一行（Spinner 的行高未必等于 `touch_target`），
+  挤矮 `weight=1` 的画布 → `onSizeChanged` 重建 `drawingBitmap` → **静默擦掉学生刚写的字迹**（见第 7 节）。
+  ActionBar 与页面内容区相互独立，改它不参与画布的高度计算。
+- 练习页用返回箭头中途退出**不归档**已完成但未收尾的那组练习，这与系统返回键的既有取舍一致（见 `CLAUDE.md`）。
 
 ---
 
@@ -404,6 +421,9 @@
 
 画布  32f 笔宽（精度参数，勿改）│ 识别页 300dp 固定 / 练习页 weight=1 + minHeight 160dp
       圆角靠外层 FrameLayout 的 clipToOutline 裁，容器不得加 padding
+
+返回  二级页统一用 ActionBar 左上角的返回箭头，页面内容区不设返回按钮
+      ActionBar 起排位置 = page_padding_h，与页面内容左边缘对齐
 
 铁律  练习页画布周围的条件显示用 INVISIBLE，不用 GONE —— 否则 onSizeChanged 会清空笔迹
       按钮的 backgroundTint/textColor 必须用 res/color/ 的 selector，否则禁用态不可见

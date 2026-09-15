@@ -65,6 +65,10 @@
         <item name="background">@color/surface</item>
         <item name="elevation">0dp</item>
         <item name="titleTextStyle">@style/App.ActionBar.Title</item>
+        <!-- 标题与二级页的返回箭头都从 page_padding_h 起排，与页面内容区的左边缘对齐。
+             默认值是 16dp，会与 20dp 的页边距错开 4dp —— 返回箭头比画布左边缘偏出一小截，
+             看起来像是没对齐。 -->
+        <item name="contentInsetStart">@dimen/page_padding_h</item>
     </style>
 
     <style name="App.ActionBar.Title" parent="TextAppearance.Material3.TitleLarge">

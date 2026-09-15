@@ -1,6 +1,7 @@
 package com.github.lany192.mnist
 
 import android.os.Bundle
+import android.view.MenuItem
 import android.view.View
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
@@ -40,7 +41,8 @@ class HistoryActivity : AppCompatActivity() {
 
         val repository = PracticeDatabase.repository(applicationContext)
 
-        binding.buttonBack.setOnClickListener { finish() }
+        // 二级页统一的返回入口：ActionBar 左上角的返回箭头（见 DESIGN.md 1.3）
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
         binding.buttonReviewMistakes.setOnClickListener {
             viewModel.dispatch(HistoryIntent.ReviewMistakes)
         }
@@ -62,6 +64,15 @@ class HistoryActivity : AppCompatActivity() {
                 }
             }
         }
+    }
+
+    /** ActionBar 左上角的返回箭头。finish() 回到首页，与系统返回键同效。 */
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        if (item.itemId == android.R.id.home) {
+            finish()
+            return true
+        }
+        return super.onOptionsItemSelected(item)
     }
 
     private fun handleEffect(effect: HistoryEffect) {

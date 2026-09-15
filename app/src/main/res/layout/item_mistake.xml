@@ -1,23 +1,33 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  错题本的一行：上面是题目，下面是学生写成了什么、错了几次。
+  由 HistoryActivity.renderMistakes() 运行时 inflate 进 containerMistakes。
+-->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginTop="2dp"
-    android:orientation="vertical">
+    android:layout_marginTop="@dimen/space_sm"
+    android:background="@drawable/bg_block"
+    android:orientation="vertical"
+    android:paddingStart="@dimen/space_lg"
+    android:paddingTop="@dimen/space_md"
+    android:paddingEnd="@dimen/space_lg"
+    android:paddingBottom="@dimen/space_md">
 
     <TextView
         android:id="@+id/textMistakeProblem"
+        style="@style/TextAppearance.App.Body"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:textSize="16sp"
+        android:fontFamily="sans-serif-medium"
         tools:text="2938 + 406 = 3344" />
 
     <TextView
         android:id="@+id/textMistakeWritten"
+        style="@style/TextAppearance.App.Caption"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:textColor="#666666"
-        android:textSize="14sp"
+        android:layout_marginTop="@dimen/space_xs"
         tools:text="你写的是 1（错了 2 次）" />
 </LinearLayout>

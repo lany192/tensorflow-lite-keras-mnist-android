@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  间距与尺寸令牌。间距档位固定为 4 / 8 / 12 / 16 / 24 / 32 六档，
+  不要为某个控件临时取 18dp、20dp 这类值（DESIGN.md 第 4 节）。
+-->
+<resources>
+
+    <dimen name="space_xs">4dp</dimen>
+    <dimen name="space_sm">8dp</dimen>
+    <dimen name="space_md">12dp</dimen>
+    <dimen name="space_lg">16dp</dimen>
+    <dimen name="space_xl">24dp</dimen>
+    <dimen name="space_2xl">32dp</dimen>
+
+    <!-- 页面留白。识别页与学习记录页没有 weight 画布，可以给足呼吸感 -->
+    <dimen name="page_padding_h">20dp</dimen>
+    <dimen name="page_padding_v">16dp</dimen>
+
+    <!--
+      练习页的垂直留白刻意更小。
+      该页画布占 weight=1，画布越高，「笔宽 / 手写数字高」的比例越容易留在安全区（≤0.19），
+      识别率越高。这里的每一个 dp 都是从画布身上省下来的，不要为了"对齐另外两页"改大。
+    -->
+    <dimen name="practice_padding_v">12dp</dimen>
+
+    <!-- 圆角：只有两档 -->
+    <dimen name="radius_canvas">24dp</dimen>
+    <dimen name="radius_block">16dp</dimen>
+
+    <dimen name="touch_target">48dp</dimen>
+    <dimen name="entry_row_height">56dp</dimen>
+
+    <!-- 画布尺寸。识别页固定高度，练习页吃剩余空间并保底 -->
+    <dimen name="canvas_home_height">300dp</dimen>
+    <dimen name="canvas_practice_min_height">160dp</dimen>
+
+</resources>

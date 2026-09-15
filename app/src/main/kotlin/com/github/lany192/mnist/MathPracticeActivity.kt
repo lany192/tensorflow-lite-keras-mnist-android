@@ -191,6 +191,9 @@ class MathPracticeActivity : AppCompatActivity() {
         }
         binding.textExpression.text = getString(R.string.math_expression_format, state.currentProblem.expression)
 
+        // 反馈文字的颜色与它的文案同源，因此不可能出现「文案说答错、颜色说答对」。
+        // 默认中性：确认态写的"识别结果：X"只是回显，学生此刻正是要核对它，本身不含对错。
+        binding.textFeedback.setTextColor(getColor(R.color.on_surface))
         when (phase) {
             is MathPracticePhase.Confirming -> {
                 val text = digitsText(phase.digits, phase.decimalIndexes)
@@ -205,6 +208,9 @@ class MathPracticeActivity : AppCompatActivity() {
             }
 
             is MathPracticePhase.Judged -> {
+                // Judged 态由 ViewModel 保证只可能是答错（答对会直接 advance 到下一题），
+                // 所以这里的错误色与下面那句"回答错误"文案用的是同一个前提，不会漂移。
+                binding.textFeedback.setTextColor(getColor(R.color.wrong))
                 binding.textFeedback.text =
                     getString(R.string.math_wrong_answer_format, state.currentProblem.answer)
                 binding.textDetail.text = getString(
@@ -223,6 +229,12 @@ class MathPracticeActivity : AppCompatActivity() {
         }
 
         if (finished) {
+            // 与下面的 when 用的是同一个条件，所以颜色跟着文案走：
+            // 只有"全部答对 N 题，太棒了！"那一句才上绿色。重做模式下只复述成绩，不提"太棒了"。
+            val allCorrect = !state.isReviewing && state.wrongAttempts.isEmpty()
+            binding.textSummary.setTextColor(
+                getColor(if (allCorrect) R.color.correct else R.color.on_surface)
+            )
             binding.textSummary.text = when {
                 state.isReviewing ->
                     getString(R.string.math_review_summary_format, state.correctCount, state.attempts.size)

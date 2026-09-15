@@ -1,11 +1,166 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  主题与文字/按钮样式。取值全部来自 colors.xml 与 dimens.xml —— 布局里不再出现字面色值。
+
+  为什么父主题是 Material3：`material` 依赖本来就在 build.gradle.kts 里但一直没被使用，
+  而 Material3 主题是 MaterialButton / MaterialCardView 等组件正常工作的前提
+  （用非 Material 主题配 Material 组件会直接抛 ThemeEnforcement 异常）。
+  这里只借用它的组件与状态系统，视觉方向仍是 Calm UI —— 低饱和、去阴影、靠色差分层。
+
+  为什么是 Light 而不是 DayNight：本项目没有 values-night。DayNight 会让 Material3
+  自带的深色资源在系统深色模式下生效，渲染出一个只有一半被适配过的界面。
+  要支持深色模式时，先加 values-night 并同步更新 DESIGN.md，再改这里。
+-->
 <resources>
 
-    <!-- Base application theme. -->
-    <style name="AppTheme" parent="Theme.AppCompat.Light.DarkActionBar">
-        <!-- Customize your theme here. -->
-        <item name="colorPrimary">@color/colorPrimary</item>
-        <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
-        <item name="colorAccent">@color/colorAccent</item>
+    <style name="AppTheme" parent="Theme.Material3.Light">
+
+        <!-- ── 颜色角色：全部映射到 Calm 色板 ───────────────────────────── -->
+        <item name="colorPrimary">@color/accent</item>
+        <item name="colorOnPrimary">@color/on_accent</item>
+        <item name="colorPrimaryContainer">@color/accent_container</item>
+        <item name="colorOnPrimaryContainer">@color/on_accent_container</item>
+        <item name="colorSecondary">@color/accent</item>
+        <item name="colorOnSecondary">@color/on_accent</item>
+        <item name="colorSecondaryContainer">@color/accent_container</item>
+        <item name="colorOnSecondaryContainer">@color/on_accent_container</item>
+        <item name="colorError">@color/wrong</item>
+        <item name="colorOnError">@color/on_accent</item>
+
+        <item name="colorSurface">@color/surface</item>
+        <item name="colorOnSurface">@color/on_surface</item>
+        <item name="colorSurfaceVariant">@color/surface_raised</item>
+        <item name="colorOnSurfaceVariant">@color/on_surface_variant</item>
+
+        <!-- Surface container 梯度全部压成同一个值：Calm UI 不用高度分层 -->
+        <item name="colorSurfaceContainerLowest">@color/surface_raised</item>
+        <item name="colorSurfaceContainerLow">@color/surface_raised</item>
+        <item name="colorSurfaceContainer">@color/surface_raised</item>
+        <item name="colorSurfaceContainerHigh">@color/surface_raised</item>
+        <item name="colorSurfaceContainerHighest">@color/surface_raised</item>
+
+        <item name="colorOutline">@color/outline</item>
+        <item name="colorOutlineVariant">@color/outline</item>
+
+        <item name="android:colorBackground">@color/surface</item>
+        <item name="android:windowBackground">@color/surface</item>
+        <item name="android:textColorPrimary">@color/on_surface</item>
+        <item name="android:textColorSecondary">@color/on_surface_variant</item>
+
+        <!-- 状态栏与页面同色 + 深色图标：没有深色顶栏，界面从最顶上一路是浅色 -->
+        <item name="android:statusBarColor">@color/surface</item>
+        <item name="android:windowLightStatusBar">true</item>
+
+        <!-- ── ActionBar：扁平化 ────────────────────────────────────────
+             ActionBar 同时承担页面标题与系统栏 inset 的处理，因此保留它而不是改用页面内标题：
+             本项目没有任何 WindowInsets / fitsSystemWindows 代码，而 targetSdk=36 会让
+             Android 15+ 强制边到边。去掉 ActionBar 就必须补一套 inset 处理，否则标题会钻到
+             状态栏底下。这里只把它从「#1E1E1E 近黑底」改成与页面同色的扁平浅色条。 -->
+        <item name="actionBarStyle">@style/App.ActionBar</item>
+        <item name="actionBarPopupTheme">@style/ThemeOverlay.Material3.Light</item>
+
+    </style>
+
+    <style name="App.ActionBar" parent="Widget.AppCompat.ActionBar.Solid">
+        <item name="background">@color/surface</item>
+        <item name="elevation">0dp</item>
+        <item name="titleTextStyle">@style/App.ActionBar.Title</item>
+    </style>
+
+    <style name="App.ActionBar.Title" parent="TextAppearance.Material3.TitleLarge">
+        <item name="android:textColor">@color/on_surface</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:textSize">19sp</item>
+        <item name="android:letterSpacing">0.01</item>
+    </style>
+
+
+    <!-- ── 文字样式：五档，全部用 sans-serif-medium 代替 textStyle="bold" ─────
+         bold 在中文下过重，Calm UI 要的是「清晰但不喊」。 -->
+
+    <!-- 练习题面 -->
+    <style name="TextAppearance.App.Display" parent="TextAppearance.AppCompat">
+        <item name="android:textSize">40sp</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:textColor">@color/on_surface</item>
+        <item name="android:letterSpacing">0.01</item>
+    </style>
+
+    <!-- 页面主视觉：识别结果 / 判定 / 成绩 / 累计正确率。每屏只允许出现一个 -->
+    <style name="TextAppearance.App.Headline" parent="TextAppearance.AppCompat">
+        <item name="android:textSize">30sp</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:textColor">@color/on_surface</item>
+        <item name="android:letterSpacing">0.01</item>
+    </style>
+
+    <!-- 分区小标题 -->
+    <style name="TextAppearance.App.Title" parent="TextAppearance.AppCompat">
+        <item name="android:textSize">17sp</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:textColor">@color/on_surface</item>
+    </style>
+
+    <!-- 列表主行、明细行、入口行 -->
+    <style name="TextAppearance.App.Body" parent="TextAppearance.AppCompat">
+        <item name="android:textSize">15sp</item>
+        <item name="android:textColor">@color/on_surface</item>
+    </style>
+
+    <!-- 提示行 -->
+    <style name="TextAppearance.App.Caption" parent="TextAppearance.AppCompat">
+        <item name="android:textSize">13sp</item>
+        <item name="android:textColor">@color/on_surface_variant</item>
+        <item name="android:letterSpacing">0.02</item>
+    </style>
+
+
+    <!-- ── 按钮：只有两种 ─────────────────────────────────────────────
+         布局里必须显式写 <com.google.android.material.button.MaterialButton>，
+         不要用裸 <Button>：裸标签靠 MaterialComponentsViewInflater 在运行时替换，
+         ViewBinding 生成的字段类型会随之摇摆。 -->
+
+    <!-- 主操作。每个页面同时最多一个「实心」按钮 -->
+    <style name="Widget.App.Button.Primary" parent="Widget.Material3.Button">
+        <item name="android:minHeight">@dimen/touch_target</item>
+        <item name="android:minWidth">96dp</item>
+        <item name="android:textSize">15sp</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:letterSpacing">0.02</item>
+        <item name="android:textColor">@color/btn_primary_text</item>
+        <item name="backgroundTint">@color/btn_primary_bg</item>
+        <item name="cornerRadius">24dp</item>
+        <item name="android:paddingStart">@dimen/space_xl</item>
+        <item name="android:paddingEnd">@dimen/space_xl</item>
+    </style>
+
+    <!-- 次操作：清除 / 重写 / 返回。无底色、无边框 -->
+    <style name="Widget.App.Button.Text" parent="Widget.Material3.Button.TextButton">
+        <item name="android:minHeight">@dimen/touch_target</item>
+        <item name="android:textSize">15sp</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:letterSpacing">0.02</item>
+        <item name="android:textColor">@color/btn_text_label</item>
+        <item name="android:paddingStart">@dimen/space_md</item>
+        <item name="android:paddingEnd">@dimen/space_md</item>
+    </style>
+
+    <!-- 功能入口行：整块可点，靠 surface_raised 与页面的色差成块，不画框不投影 -->
+    <style name="Widget.App.Button.Block" parent="Widget.Material3.Button">
+        <item name="android:minHeight">@dimen/entry_row_height</item>
+        <item name="android:textSize">15sp</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:letterSpacing">0.02</item>
+        <item name="android:textColor">@color/on_surface</item>
+        <item name="android:gravity">start|center_vertical</item>
+        <item name="android:paddingStart">@dimen/page_padding_h</item>
+        <item name="android:paddingEnd">@dimen/page_padding_h</item>
+        <item name="backgroundTint">@color/surface_raised</item>
+        <item name="cornerRadius">@dimen/radius_block</item>
+        <item name="elevation">0dp</item>
+        <item name="iconGravity">textEnd</item>
+        <item name="iconTint">@color/on_surface_variant</item>
+        <item name="iconPadding">@dimen/space_sm</item>
     </style>
 
 </resources>

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 主按钮的文字色。禁用时随容器一起退成灰 -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_enabled="false" android:color="@color/on_surface_disabled" />
+    <item android:color="@color/on_accent" />
+</selector>

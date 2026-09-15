@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Soft 色块。用于列表项、统计项、错题项。
+
+  Calm UI 的分组手段：靠 surface_raised 与页面底色 surface 的色差「浮」出一块，
+  不画边框、不加阴影。这是本项目唯一允许的背景成块方式。
+-->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="@color/surface_raised" />
+    <corners android:radius="@dimen/radius_block" />
+</shape>

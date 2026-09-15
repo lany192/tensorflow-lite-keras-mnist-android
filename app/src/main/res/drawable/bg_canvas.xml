@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  画布容器背景。纯白 + 24dp 圆角。
+
+  用法：包在 FingerPaintView 外面，并给容器设 android:clipToOutline="true" ——
+  白色画布本身是方的（drawingBitmap 是一个矩形），只有靠容器裁剪才能得到圆角。
+
+  安全前提：clipToOutline 只影响**绘制**。exportDrawingBitmap() 读的是 FingerPaintView
+  内部的 drawingBitmap，仍是原始分辨率的纯白底位图，识别输入完全不受圆角影响。
+  因此也绝不要把圆角做成「画布自己带 alpha 的圆角背景」——那才会污染导出。
+-->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="@color/surface_raised" />
+    <corners android:radius="@dimen/radius_canvas" />
+</shape>

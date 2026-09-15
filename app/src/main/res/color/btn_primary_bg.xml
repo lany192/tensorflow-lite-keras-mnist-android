@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  主按钮的容器色。禁用时必须退成中性灰 —— 写成纯色会让「重做错题」在错题本为空时
+  仍然是饱和的墨蓝，看起来完全可点。
+-->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_enabled="false" android:color="@color/accent_disabled_container" />
+    <item android:color="@color/accent" />
+</selector>

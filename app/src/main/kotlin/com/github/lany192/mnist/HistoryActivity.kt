@@ -80,6 +80,10 @@ class HistoryActivity : AppCompatActivity() {
         binding.textEmpty.visibility = if (empty) View.VISIBLE else View.GONE
         binding.containerStats.visibility = if (empty) View.GONE else View.VISIBLE
 
+        // 主视觉跟着内容走。空态下"累计正确率 X%"没有值可写（上面写的是空串），
+        // 留着它会在空提示上方压出一整块留白；有数据时它才是这一页的主角。
+        binding.textOverall.visibility = if (empty) View.GONE else View.VISIBLE
+
         renderStats(state)
         renderSessions(state)
         renderMistakes(state)
@@ -99,6 +103,9 @@ class HistoryActivity : AppCompatActivity() {
     }
 
     private fun renderSessions(state: HistoryState) {
+        // 分区标题跟着分区内容走：没有内容时留一个孤零零的标题，看起来像是加载失败
+        binding.titleSessions.visibility = if (state.sessions.isEmpty()) View.GONE else View.VISIBLE
+
         val container = binding.containerSessions
         container.removeAllViews()
         for (session in state.sessions) {
@@ -117,6 +124,8 @@ class HistoryActivity : AppCompatActivity() {
     }
 
     private fun renderMistakes(state: HistoryState) {
+        binding.titleMistakes.visibility = if (state.mistakes.isEmpty()) View.GONE else View.VISIBLE
+
         val container = binding.containerMistakes
         container.removeAllViews()
         for (mistake in state.mistakes) {

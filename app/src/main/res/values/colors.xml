@@ -1,6 +1,49 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  Calm UI 色板。原则：靠「表面色差 + 字色深浅」建立层次，不靠边框、不靠阴影。
+
+  唯一的彩色是 accent（墨蓝），它只出现在主按钮、文字按钮和进度文字上；
+  三个语义色（correct / wrong）**只用于反馈文字**，且刻意去饱和，避免刺激。
+  新增颜色前先读 DESIGN.md 第 2 节。
+-->
 <resources>
-    <color name="colorPrimary">#1E1E1E</color>
-    <color name="colorPrimaryDark">#1E1E1E</color>
-    <color name="colorAccent">#1E1E1E</color>
+
+    <!-- 表面：暖中性。替代原来的死灰 #dddddd -->
+    <color name="surface">#F7F6F3</color>
+    <!-- 抬起的表面：画布、soft 色块。与 surface 的色差就是全部层次 -->
+    <color name="surface_raised">#FFFFFF</color>
+
+    <!-- 文字 -->
+    <color name="on_surface">#1C1B1A</color>
+    <!-- 5.14:1 on surface（原 #666666 在 #dddddd 上只有 4.23:1，低于 WCAG AA） -->
+    <color name="on_surface_variant">#6B6862</color>
+
+    <!-- 唯一强调色：墨蓝 -->
+    <color name="accent">#3E5C76</color>
+    <color name="on_accent">#FFFFFF</color>
+    <!-- 强调色的极浅填充，用于涟漪与次级强调块 -->
+    <color name="accent_container">#E7ECF2</color>
+    <color name="on_accent_container">#2C4359</color>
+
+    <!-- 唯一允许的「线」：极细分隔。本项目当前并未使用，保留给将来的列表分隔 -->
+    <color name="outline">#E3E1DC</color>
+
+    <!-- 语义色：去饱和，仅用于反馈文字，绝不用作背景色块 -->
+    <color name="correct">#3F6B4F</color>
+    <color name="wrong">#8C4A3F</color>
+
+    <!--
+      禁用态。
+      ⚠️ 按钮的 backgroundTint / textColor 必须写成 ColorStateList（res/color/ 下的 selector），
+      直接写纯色会把 MaterialButton 自带的禁用态外观一起覆盖掉 —— 结果是"按钮明明是禁用的，
+      看起来却完全可点"（HistoryActivity 在错题本为空时就会禁用「重做错题」）。
+    -->
+    <color name="on_surface_disabled">#A5A29B</color>
+    <color name="accent_disabled_container">#E4E2DE</color>
+
+    <!-- 主题槽位别名。保留旧名字，避免主题引用处大面积改名 -->
+    <color name="colorPrimary">@color/accent</color>
+    <color name="colorPrimaryDark">@color/surface</color>
+    <color name="colorAccent">@color/accent</color>
+
 </resources>

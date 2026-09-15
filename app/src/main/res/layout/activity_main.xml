@@ -1,92 +1,117 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  识别页。骨架：画布 soft 色块 → 提示 → 识别结果（唯一主视觉）→ 操作行 → 功能入口。
+
+  本页画布是固定高度（不参与 weight），所以它可以自由地用圆角容器包起来，
+  不存在「改变高度会清空笔迹」的问题 —— 那条规则只约束练习页，见 activity_math_practice.xml。
+-->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/surface"
     android:orientation="vertical"
-    android:padding="10dp"
-    android:background="#dddddd"
+    android:paddingStart="@dimen/page_padding_h"
+    android:paddingTop="@dimen/page_padding_v"
+    android:paddingEnd="@dimen/page_padding_h"
+    android:paddingBottom="@dimen/page_padding_v"
     tools:context=".MainActivity">
 
-    <com.github.lany192.mnist.FingerPaintView
-        android:id="@+id/finger_paint_view"
+    <!-- clipToOutline 让方形的白色画布被裁成圆角。只影响绘制，不影响导出位图 -->
+    <FrameLayout
         android:layout_width="match_parent"
-        android:layout_height="300dp"
-        android:layout_gravity="center"
-        android:background="#ffffff" />
+        android:layout_height="@dimen/canvas_home_height"
+        android:background="@drawable/bg_canvas"
+        android:clipToOutline="true">
 
+        <com.github.lany192.mnist.FingerPaintView
+            android:id="@+id/finger_paint_view"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@color/surface_raised" />
+    </FrameLayout>
+
+    <!-- 书写提示。文案由 MainActivity.onCreate 写入（含位数上限参数） -->
     <TextView
         android:id="@+id/textHint"
+        style="@style/TextAppearance.App.Caption"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="6dp"
+        android:layout_marginTop="@dimen/space_md"
         android:gravity="center"
-        android:textColor="#666666"
-        android:textSize="12sp"
-        tools:text="请从左到右依次书写，数字之间留出空隙" />
+        tools:text="请从左到右依次书写：数字尽量写大、留空隙；小数点写在右下角，最多 4 位数字" />
 
+    <!-- 本页唯一的主视觉 -->
     <TextView
         android:id="@+id/textResult"
+        style="@style/TextAppearance.App.Headline"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"
+        android:layout_marginTop="@dimen/space_lg"
         android:gravity="center"
-        android:textSize="28sp"
-        android:textStyle="bold"
         tools:text="识别结果：1234" />
 
     <TextView
         android:id="@+id/textDetail"
+        style="@style/TextAppearance.App.Body"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
+        android:layout_marginTop="@dimen/space_xs"
         android:gravity="center"
-        android:textColor="#666666"
-        android:textSize="14sp"
-        tools:text="共 4 位：1 2 3 4" />
+        android:textColor="@color/on_surface_variant"
+        tools:text="共 4 个字符：1 2 3 4" />
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
+        android:layout_marginTop="@dimen/space_lg"
         android:gravity="center_horizontal"
         android:orientation="horizontal">
 
-        <Button
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/buttonClear"
+            style="@style/Widget.App.Button.Text"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/action_clear" />
 
-        <Button
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/buttonDetect"
+            style="@style/Widget.App.Button.Primary"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginLeft="8dp"
+            android:layout_marginStart="@dimen/space_sm"
             android:text="@string/action_detect" />
 
     </LinearLayout>
 
-    <LinearLayout
+    <!--
+      弹性留白：把功能入口压到页面底部，让"当前任务"（画布 + 识别）与"去别处"（入口行）
+      之间有一段刻意的空白。没有它时，结果区的空位会把按钮顶到中间，入口行悬浮在半空，
+      留白看起来像是没排完版。
+    -->
+    <Space
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
+    <!-- 功能入口：整块可点的 soft 色块行，取代原来两排系统默认按钮 -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/buttonMathPractice"
+        style="@style/Widget.App.Button.Block"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:gravity="center_horizontal"
-        android:orientation="horizontal">
+        android:text="@string/action_math_practice"
+        app:icon="@drawable/ic_chevron_right" />
 
-        <Button
-            android:id="@+id/buttonMathPractice"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/action_math_practice" />
-
-        <Button
-            android:id="@+id/buttonHistory"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginLeft="8dp"
-            android:text="@string/action_history" />
-    </LinearLayout>
-
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/buttonHistory"
+        style="@style/Widget.App.Button.Block"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/space_sm"
+        android:text="@string/action_history"
+        app:icon="@drawable/ic_chevron_right" />
 
 </LinearLayout>

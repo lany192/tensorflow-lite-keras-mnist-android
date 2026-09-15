@@ -1,11 +1,32 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  练习页。
+
+  ⚠️ 本页是全项目最脆弱的布局：画布占 weight=1 吃剩余空间，而 FingerPaintView.onSizeChanged
+  会重建 drawingBitmap。**任何让画布高度发生变化的改动都会静默清空学生刚写的字迹**，
+  学生的直接感受是「提交把答案吃掉了」。因此本页有三条与另外两页不同的规矩：
+
+  1. 画布周围的条件显示一律用 INVISIBLE，绝不用 GONE（文本行） —— GONE 占位为 0，
+     一出现就把画布挤矮。见 textCheckHint 与年级行。
+  2. 垂直方向的间距刻意比另外两页紧（根 padding 用 practice_padding_v 而不是 page_padding_v，
+     块间用 space_sm 而不是 space_lg）。画布每高一个 dp，「笔宽 / 手写数字高」的比例就多一分
+     留在安全区（≤0.19）的机会，识别率就高一分。**不要为了"跟首页对齐"把这些值调大。**
+  3. 包住画布的 FrameLayout 绝不能加 padding —— 它会直接吃掉画布尺寸。
+
+  XML 里的默认可见性必须与 render() 对初始状态（Answering）生成的结果逐项一致：
+  render() 在 onCreate 和每次 onStart 都会重放，两者不一致时第一次 render 就会翻转可见性、挤动画布。
+-->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/surface"
     android:orientation="vertical"
-    android:padding="10dp"
-    android:background="#dddddd"
+    android:paddingStart="@dimen/page_padding_h"
+    android:paddingTop="@dimen/practice_padding_v"
+    android:paddingEnd="@dimen/page_padding_h"
+    android:paddingBottom="@dimen/practice_padding_v"
     tools:context=".MathPracticeActivity">
 
     <!-- 年级选择与进度：结束态也保留，方便学生直接换年级重开 -->
@@ -17,6 +38,7 @@
 
         <TextView
             android:id="@+id/textGradeLabel"
+            style="@style/TextAppearance.App.Caption"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/math_grade_label" />
@@ -26,16 +48,16 @@
             android:id="@+id/spinnerGrade"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginLeft="4dp"
+            android:layout_marginStart="@dimen/space_xs"
             android:entries="@array/grade_names" />
 
         <TextView
             android:id="@+id/textProgress"
+            style="@style/TextAppearance.App.Caption"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:gravity="end"
-            android:textSize="16sp"
             tools:text="第 3/10 题" />
     </LinearLayout>
 
@@ -49,68 +71,76 @@
 
         <TextView
             android:id="@+id/textExpression"
+            style="@style/TextAppearance.App.Display"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
+            android:layout_marginTop="@dimen/space_sm"
             android:gravity="center"
-            android:textSize="40sp"
-            android:textStyle="bold"
             tools:text="23 + 45 = ?" />
 
         <!-- 高度用 weight 吃掉剩余空间，而不是像 activity_main 那样写死 300dp：
-             识别精度由「笔画宽 / 数字高」的比例决定（安全区 ≤0.19），画布越高越容易写进安全区 -->
-        <com.github.lany192.mnist.FingerPaintView
-            android:id="@+id/fingerPaintView"
+             识别精度由「笔画宽 / 数字高」的比例决定（安全区 ≤0.19），画布越高越容易写进安全区。
+             圆角靠容器的 clipToOutline 裁出来，只影响绘制，不影响 exportDrawingBitmap() 的导出内容。
+
+             ⚠️ FrameLayout 不得加 padding，也不得再插入任何兄弟控件占位。 -->
+        <FrameLayout
             android:layout_width="match_parent"
             android:layout_height="0dp"
-            android:layout_marginTop="8dp"
+            android:layout_marginTop="@dimen/space_sm"
             android:layout_weight="1"
-            android:background="#ffffff"
-            android:minHeight="160dp" />
+            android:background="@drawable/bg_canvas"
+            android:clipToOutline="true"
+            android:minHeight="@dimen/canvas_practice_min_height">
+
+            <com.github.lany192.mnist.FingerPaintView
+                android:id="@+id/fingerPaintView"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@color/surface_raised" />
+        </FrameLayout>
 
         <!-- 必须是 invisible 而不是 gone：画布是 weight=1 撑满剩余空间的，这行若用 gone 占位为 0，
              它一出现就会把画布挤矮，触发 FingerPaintView.onSizeChanged 重建位图、清空学生刚写的字迹，
              学生会以为"提交把答案吃掉了"。invisible 保留行高，画布尺寸恒定。 -->
         <TextView
             android:id="@+id/textCheckHint"
+            style="@style/TextAppearance.App.Caption"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
+            android:layout_marginTop="@dimen/space_xs"
             android:gravity="center"
             android:text="@string/math_check_hint"
-            android:textColor="#666666"
-            android:textSize="12sp"
             android:visibility="invisible" />
 
         <TextView
             android:id="@+id/textHint"
+            style="@style/TextAppearance.App.Caption"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
+            android:layout_marginTop="@dimen/space_xs"
             android:gravity="center"
-            android:text="@string/math_hint_write"
-            android:textColor="#666666"
-            android:textSize="12sp" />
+            android:text="@string/math_hint_write" />
 
+        <!-- 文字颜色由 render() 按阶段写入：确认态中性、已判定态错误色。
+             颜色与文案同源，不会出现「文案说答错、颜色说答对」。 -->
         <TextView
             android:id="@+id/textFeedback"
+            style="@style/TextAppearance.App.Headline"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
+            android:layout_marginTop="@dimen/space_xs"
             android:gravity="center"
-            android:textSize="28sp"
-            android:textStyle="bold"
             tools:text="识别结果：68" />
 
         <TextView
             android:id="@+id/textDetail"
+            style="@style/TextAppearance.App.Body"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="2dp"
+            android:layout_marginTop="@dimen/space_xs"
             android:gravity="center"
-            android:textColor="#666666"
-            android:textSize="14sp"
-            tools:text="共 2 位：6 8" />
+            android:textColor="@color/on_surface_variant"
+            tools:text="共 2 个字符：6 8" />
     </LinearLayout>
 
     <!-- 结算区：仅最后一题判定完毕后显示 -->
@@ -122,21 +152,21 @@
         android:orientation="vertical"
         android:visibility="gone">
 
+        <!-- 全部答对时 render() 会把它染成 correct 色 -->
         <TextView
             android:id="@+id/textSummary"
+            style="@style/TextAppearance.App.Headline"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:gravity="center"
-            android:textSize="28sp"
-            android:textStyle="bold"
             tools:text="答对 7 / 10 题" />
 
         <TextView
+            style="@style/TextAppearance.App.Title"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:text="@string/math_review_title"
-            android:textSize="16sp" />
+            android:layout_marginTop="@dimen/space_md"
+            android:text="@string/math_review_title" />
 
         <!-- 最多 10 行错题，必须可滚动，否则小屏上按钮会被挤出屏幕 -->
         <ScrollView
@@ -146,69 +176,78 @@
 
             <TextView
                 android:id="@+id/textReview"
+                style="@style/TextAppearance.App.Body"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:textSize="16sp"
+                android:lineSpacingExtra="@dimen/space_xs"
                 tools:text="第 2 题：23 + 45 = 68，你写的是 96" />
         </ScrollView>
 
         <!-- 放在 groupResult 内部：作答态 groupResult 是 GONE，所以这个按钮不会挤到画布。
              绝不要把它挪到 groupResult 外面 —— 那会变成又一个影响画布高度的兄弟控件。 -->
-        <Button
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/buttonReviewMistakes"
+            style="@style/Widget.App.Button.Primary"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center_horizontal"
-            android:layout_marginTop="8dp"
+            android:layout_marginTop="@dimen/space_md"
             android:text="@string/math_action_review_mistakes"
             android:visibility="gone" />
     </LinearLayout>
 
-    <!-- 按钮行：五个按钮按状态显示其中两个 -->
+    <!-- 按钮行：六个按钮按状态显示其中两个。
+         全部统一 minHeight=48dp，行高恒定，因此不改变画布高度。 -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
+        android:layout_marginTop="@dimen/space_sm"
         android:gravity="center_horizontal"
         android:orientation="horizontal">
 
-        <Button
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/buttonClear"
+            style="@style/Widget.App.Button.Text"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/action_clear" />
 
-        <Button
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/buttonSubmit"
+            style="@style/Widget.App.Button.Primary"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginLeft="8dp"
+            android:layout_marginStart="@dimen/space_sm"
             android:text="@string/math_action_submit" />
 
-        <Button
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/buttonRewrite"
+            style="@style/Widget.App.Button.Text"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/math_action_rewrite"
             android:visibility="gone" />
 
-        <Button
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/buttonConfirm"
+            style="@style/Widget.App.Button.Primary"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginLeft="8dp"
+            android:layout_marginStart="@dimen/space_sm"
             android:text="@string/math_action_confirm"
             android:visibility="gone" />
 
-        <Button
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/buttonNext"
+            style="@style/Widget.App.Button.Primary"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/math_action_next"
             android:visibility="gone" />
 
-        <Button
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/buttonNextSet"
+            style="@style/Widget.App.Button.Primary"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/math_action_next_set"

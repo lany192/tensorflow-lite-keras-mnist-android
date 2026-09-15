@@ -1,10 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  一次练习的摘要行。由 HistoryActivity.renderSessions() 运行时 inflate 进 containerSessions。
+
+  android:id 与文本格式由 Kotlin 侧写入（history_session_format），改这里的结构前先看那边。
+-->
 <TextView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/textSession"
+    style="@style/TextAppearance.App.Body"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:paddingTop="2dp"
-    android:paddingBottom="2dp"
-    android:textSize="16sp"
+    android:layout_marginTop="@dimen/space_sm"
+    android:background="@drawable/bg_block"
+    android:paddingStart="@dimen/space_lg"
+    android:paddingTop="@dimen/space_md"
+    android:paddingEnd="@dimen/space_lg"
+    android:paddingBottom="@dimen/space_md"
     tools:text="09-13 14:23　四年级　答对 7/10" />

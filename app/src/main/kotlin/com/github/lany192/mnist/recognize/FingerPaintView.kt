@@ -1,6 +1,5 @@
 package com.github.lany192.mnist.recognize
 
-import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
@@ -11,6 +10,7 @@ import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.View
 import kotlin.math.abs
+import androidx.core.graphics.createBitmap
 
 class FingerPaintView @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
@@ -38,22 +38,22 @@ class FingerPaintView @JvmOverloads constructor(
         drawingPaint = Paint(Paint.DITHER_FLAG)
         path = Path()
         paint = Paint()
-        paint!!.isAntiAlias = true
-        paint!!.isDither = true
-        paint!!.setColor(Color.BLACK)
-        paint!!.style = Paint.Style.STROKE
-        paint!!.strokeCap = Paint.Cap.ROUND
-        paint!!.strokeJoin = Paint.Join.ROUND
+        paint?.isAntiAlias = true
+        paint?.isDither = true
+        paint?.setColor(Color.BLACK)
+        paint?.style = Paint.Style.STROKE
+        paint?.strokeCap = Paint.Cap.ROUND
+        paint?.strokeJoin = Paint.Join.ROUND
         // MNIST 模型对"笔画宽 / 数字高度"的比例极敏感：实测安全区在 0.19 以下，
         // 0.2~0.25 开始明显退化、0.3 以上崩塌。64f 只在把字写成占满整个视图（≈700px 高）
         // 时才是最优；一旦写多位数、每个数字变小，64f 的比例会飙到 0.45 以上，整串全对率归零。
         // 32f 让安全区覆盖约 170~800px 的字高，且大字单数字场景实测无损失（97.5% vs 96.7%）。
-        paint!!.strokeWidth = 32f
+        paint?.strokeWidth = 32f
     }
 
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
         super.onSizeChanged(w, h, oldw, oldh)
-        drawingBitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+        drawingBitmap = createBitmap(w, h)
         drawingCanvas = Canvas(drawingBitmap!!)
     }
 
@@ -108,7 +108,7 @@ class FingerPaintView @JvmOverloads constructor(
         // 它还是 null。那时画布本来就是空的，只需重置状态 —— onSizeChanged 随后会建出空位图。
         val bitmap = drawingBitmap
         if (bitmap != null) {
-            drawingBitmap = Bitmap.createBitmap(bitmap.width, bitmap.height, Bitmap.Config.ARGB_8888)
+            drawingBitmap = createBitmap(bitmap.width, bitmap.height)
             drawingCanvas = Canvas(drawingBitmap!!)
         }
         isEmpty = true
@@ -120,7 +120,7 @@ class FingerPaintView @JvmOverloads constructor(
      * 不能带入视图背景色，也不能缩放，否则预处理（裁剪/宽高比）失效。
      */
     fun exportDrawingBitmap(): Bitmap {
-        val rawBitmap = Bitmap.createBitmap(getWidth(), getHeight(), Bitmap.Config.ARGB_8888)
+        val rawBitmap = createBitmap(width, height)
         val canvas = Canvas(rawBitmap)
         canvas.drawColor(Color.WHITE)
         draw(canvas)

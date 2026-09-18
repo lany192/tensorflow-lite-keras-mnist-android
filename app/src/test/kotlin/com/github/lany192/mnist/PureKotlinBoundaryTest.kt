@@ -71,7 +71,7 @@ class PureKotlinBoundaryTest {
         /**
          * 这个清单**就是**那条边界线的定义：列在这里的文件必须能在 JVM 上直接跑。
          *
-         * `PracticeEntities.kt` 只依赖 `androidx.room` 与协程，按同一把尺子（只禁 `import android.`）
+         * `PracticeEntities.kt` 只依赖 `androidx.room3` 与协程，按同一把尺子（只禁 `import android.`）
          * 它也是纯 Kotlin，所以归在这一侧。
          */
         val PURE_KOTLIN_FILES = listOf(

@@ -1,9 +1,9 @@
 package com.github.lany192.mnist.data
 
 import android.content.Context
-import androidx.room.Database
-import androidx.room.Room
-import androidx.room.RoomDatabase
+import androidx.room3.Database
+import androidx.room3.Room
+import androidx.room3.RoomDatabase
 import com.github.lany192.mnist.practice.MathPracticeViewModel
 
 /**

@@ -83,6 +83,9 @@
 练习历史保存在本地 SQLite 数据库（`practice.db`，两张表）中。不会上传；卸载应用会清除数据。
 
 - **`PracticeRepository.kt` / `PracticeRecorder` 是唯一的持久化边界**——纯 Kotlin，位于边界测试白名单中。如果要移除 Room（KSP 失效，或改用其他存储），只需修改 `RoomPracticeRepository.kt`。
+- **Room 3.x 换了 Maven 坐标，也换了包名，两处都得改**：坐标为 `androidx.room3:room3-runtime` / `room3-compiler`，源码里的 `androidx.room.*` 全部变成 `androidx.room3.*`（只改 `libs.versions.toml` 会编译不过，这至少是响的）。KSP 参数**没有**跟着改，仍是 `room.schemaLocation`，`app/schemas/` 的目录布局也没变。Room 3 删掉了 SupportSQLite，`databaseBuilder(...).build()` 在未显式 `setDriver` 时会默认 new 一个 `AndroidSQLiteDriver()`（`androidx.sqlite:sqlite-framework` 由 `room3-runtime` 传递带入），底层仍是同一个 `practice.db`，DB 文件格式没有变化。
+- **从 Room 2 升到 Room 3 不会让已装机上的数据库报 integrity 失败。** 同一个 schema 下 Room 3 生成的 `identityHash` 与 Room 2 逐字节相同（已实测：`PracticeDatabase_Impl` 与 `1.json` 都是 `01d2113913db3da5098c7c59b5bea53c`），`room_master_table` 里存的值没有变。
+- **删掉 `app/schemas/` 下的文件后，增量构建不会把它写回来。** KSP 任务判定 UP-TO-DATE，而导出目录在 `build/` 之外、不是它的 tracked output——`./gradlew assembleDebug` 会成功退出，仓库里却少了一份 schema，下一版写迁移的人拿到的是残缺基线。要恢复必须先 `clean`；改动实体之后也请确认 schema 文件确实被重写了（它现在以 `\n` 写出，见 `.gitattributes`）。
 - **`answer_record.correct` 由 ViewModel 写入，绝不能通过 SQL 的 `CAST(written AS INTEGER)` 重新计算。** 判定必须按数值比较（“068”就是 68），否则第二套判定实现迟早会与主实现漂移。
 - **错题本的规则是“每个 `(expression, correct_answer)` 的最新记录如果答错，就是错题”。** `MAX(id)` 子查询**不得**带 `WHERE correct = 0` 过滤：如果带上它，一道题曾经答错、后来答对之后仍会返回旧的错误记录，从而**永远无法离开错题本**。`HistorySummaryTest.mistakes_problemCorrectedLater_disappears` 固定了这一点。
 - **按 `(expression, correct_answer)` 分组，不能只按 `expression` 分组。** 题干文本会跨年级复用，把文本当作身份标识会让出题器的输出悄然变成主键。
@@ -96,7 +99,7 @@
 - **重做时忽略 `SelectGrade`。** 此时 Spinner 已禁用且不可见，唯一可能到达的回调是系统初始的 `position = 0`；如果放行它，重做模式会被自身初始化拆掉——真机观察到表现为“重做页显示了一组全新的年级题”，而且那组题还会被当作普通练习归档，拉低正确率。
 - **`Problem` 不能变成 `Parcelable`**：`android.os.Parcel` 属于 `android.*`，这会让 `MathProblem.kt` 掉出白名单，并连带让 `MathProblemGeneratorTest` 失去 JVM 可测性。跨页面传题使用两个平行数组，以及纯函数 `problemsOf`（长度不匹配时返回 null——Activity 会直接结束，而不是让 `problems[index]` 越界）。
 - **读取通过推入，写入通过注入**——参见 MVI 一节。`HistoryActivity` 合并三个 Flow 并 dispatch `Loaded`；`MathPracticeActivity` 通过 `MathPracticeViewModel.factory(...)` 接收 `PracticeRecorder`。
-- **数据库测试没有 JVM 路径**（`room-runtime` 是 KMP publication；Android module 的单元测试总会解析到 `-android` variant）。把策略留在纯 Kotlin 中（`HistorySummary`），DAO 中只保留显然正确的查询；这样 `./gradlew test` 能覆盖错题本规则，而仪器测试只验证数据库能打开并正确映射。
+- **数据库测试没有 JVM 路径**（`room3-runtime` 是 KMP publication；Android module 的单元测试总会解析到 `-android` variant）。把策略留在纯 Kotlin 中（`HistorySummary`），DAO 中只保留显然正确的查询；这样 `./gradlew test` 能覆盖错题本规则，而仪器测试只验证数据库能打开并正确映射。
 
 ## 约定
 

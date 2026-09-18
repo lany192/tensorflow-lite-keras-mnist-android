@@ -1,0 +1,4 @@
+# Room 在构建时把 schema 直接写回工作区，Room 3 起固定用 \n 而不跟随平台换行符。
+# 本仓库在 Windows 上开着 core.autocrlf=true，不钉住的话每次 clean 构建都会把 1.json
+# 的换行符从 CRLF 改写成 LF，于是它永远显示为已修改，而 `git diff` 又是空的 —— 纯噪声。
+app/schemas/**/*.json text eol=lf

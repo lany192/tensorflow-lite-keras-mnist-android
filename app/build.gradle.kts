@@ -8,8 +8,6 @@ val layoutsDir = layout.projectDirectory.dir("src/main/res/layout")
 
 android {
     namespace = "com.github.lany192.mnist"
-    // core-ktx 1.19.0 要求编译期 API ≥37。只动 compileSdk：它决定能调用哪些新 API，
-    // 与运行时行为无关，所以 targetSdk 保持 36。
     compileSdk {
         version = release(37) {
             minorApiLevel = 1

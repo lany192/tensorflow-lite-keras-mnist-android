@@ -8,4 +8,6 @@
 .externalNativeBuild
 .kotlin
 /.*
+# `/.*` 把 .gitattributes 也吞了，但它是要提交的仓库级配置（schema 的换行符就靠它钉住）。
+!/.gitattributes
 /python/venv

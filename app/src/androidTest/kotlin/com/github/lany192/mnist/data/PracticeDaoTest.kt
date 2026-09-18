@@ -1,6 +1,6 @@
 package com.github.lany192.mnist.data
 
-import androidx.room.Room
+import androidx.room3.Room
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.github.lany192.mnist.practice.Grade

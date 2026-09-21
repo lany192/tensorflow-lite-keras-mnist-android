@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  单色（Themed icon）层，Android 13+ 由系统着色后显示。
+  只保留「7.」笔迹：白色卡片在单色模式下会退化成一整块色块。
+  图中整体放大 1.2 倍（绕中心），补足去掉卡片后笔迹偏小的问题。
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <group
+        android:pivotX="54"
+        android:pivotY="54"
+        android:scaleX="1.2"
+        android:scaleY="1.2">
+
+        <path
+            android:strokeColor="#000000"
+            android:strokeWidth="8.5"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round"
+            android:pathData="M41,40.2 C47,39,59,39,65.5,40.8 C63.5,47.5,56.5,57,51,68.5" />
+
+        <path
+            android:fillColor="#000000"
+            android:pathData="M65.25,68.5 C65.25,66.15,67.15,64.25,69.5,64.25 C71.85,64.25,73.75,66.15,73.75,68.5 C73.75,70.85,71.85,72.75,69.5,72.75 C67.15,72.75,65.25,70.85,65.25,68.5 Z" />
+
+    </group>
+
+</vector>

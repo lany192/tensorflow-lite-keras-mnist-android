@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">MnistTFLite</string>
+    <string name="app_name">手写</string>
     <string name="action_clear">清除</string>
     <string name="action_detect">识别</string>
     <string name="hint_write">请从左到右依次书写：数字尽量写大、留空隙；小数点写在右下角，最多 %1$d 位数字</string>

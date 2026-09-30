@@ -82,7 +82,14 @@
     <!-- ── 文字样式：五档，全部用 sans-serif-medium 代替 textStyle="bold" ─────
          bold 在中文下过重，Calm UI 要的是「清晰但不喊」。 -->
 
-    <!-- 练习题面 -->
+    <!--
+      练习题面。全项目只有 activity_math_practice.xml 的 textExpression 用它。
+
+      这里只放排版（字号档位、字重、颜色）。“题面必须单行 + 长题面自动缩字号”属于布局约束，
+      写在 activity_math_practice.xml 上并由 PracticeLayoutConstraintTest 钉住 ——
+      autosize 属性放在布局里是官方文档明确保证生效的写法，放进 style 则依赖 AppCompat 的
+      样式解析路径，出问题时表现为长题面被 maxLines 直接裁掉，界面上不会报任何错。
+    -->
     <style name="TextAppearance.App.Display" parent="TextAppearance.AppCompat">
         <item name="android:textSize">40sp</item>
         <item name="android:fontFamily">sans-serif-medium</item>

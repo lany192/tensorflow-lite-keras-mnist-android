@@ -34,4 +34,12 @@
     <dimen name="canvas_home_height">300dp</dimen>
     <dimen name="canvas_practice_min_height">160dp</dimen>
 
+    <!--
+      练习题面的自动缩字号区间。上限与 TextAppearance.App.Display 的 40sp 一致 ——
+      短题面按 40sp 排，组合运算、小括号这类长题面缩小到放得下为止，**绝不折行**：
+      题面下方就是 weight=1 的画布，折行会把它挤矮，笔宽/数字高的比例就朝识别悬崖走。
+    -->
+    <dimen name="expression_text_size_max">40sp</dimen>
+    <dimen name="expression_text_size_min">18sp</dimen>
+
 </resources>

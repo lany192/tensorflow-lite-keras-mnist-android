@@ -73,6 +73,11 @@
         android:layout_weight="1"
         android:orientation="vertical">
 
+        <!--
+          题面必须单行：组合运算题面（`(320 - 160) ÷ 8 = ?`）按 40sp 排在窄屏上会折成两行，
+          而它下方就是 weight=1 的画布 —— 折行挤矮画布，笔宽/数字高的比例就朝识别悬崖走。
+          长题面靠自动缩字号消化。两个 sp 值放在 dimens.xml，不在这里写字面值（DESIGN.md 3.1）。
+        -->
         <TextView
             android:id="@+id/textExpression"
             style="@style/TextAppearance.App.Display"
@@ -80,6 +85,10 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/space_sm"
             android:gravity="center"
+            android:maxLines="1"
+            app:autoSizeMaxTextSize="@dimen/expression_text_size_max"
+            app:autoSizeMinTextSize="@dimen/expression_text_size_min"
+            app:autoSizeTextType="uniform"
             tools:text="23 + 45 = ?" />
 
         <!-- 高度用 weight 吃掉剩余空间，而不是像 activity_main 那样写死 300dp：

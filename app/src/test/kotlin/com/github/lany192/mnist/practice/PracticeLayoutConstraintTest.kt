@@ -63,6 +63,36 @@ class PracticeLayoutConstraintTest {
         )
     }
 
+    /**
+     * 题面必须单行显示，长题面靠自动缩字号消化。
+     *
+     * 这是同一条画布铁律的另一面：题面下方就是 `weight=1` 的画布，而组合运算的题面
+     * （最长到 `(320 - 160) ÷ 8 = ?` 这个量级）按 40sp 排会折成两行，把画布挤矮。
+     * 少了 autosize，`maxLines=1` 会把长题面**直接裁掉**，界面上不会有任何异常。
+     */
+    @Test
+    fun expressionText_staysOnOneLineAndAutoSizes() {
+        val expression = findById(document("activity_math_practice.xml").documentElement, "textExpression")
+        assertNotNull("题面控件不见了", expression)
+
+        assertEquals(
+            "题面必须继续用 Display 样式 —— 字号档位只在 styles.xml 里定义一处",
+            "@style/TextAppearance.App.Display",
+            // `style` 是 `TextView` 上唯一不带 android: 前缀的属性，不能用 androidAttr
+            expression!!.getAttribute("style"),
+        )
+        assertEquals(
+            "题面必须单行：折行会挤矮画布，把笔宽/数字高的比例推向识别悬崖",
+            "1",
+            androidAttr(expression, "maxLines"),
+        )
+        assertEquals(
+            "长题面必须靠自动缩字号消化，而不是折行或截断",
+            "uniform",
+            appAttr(expression, "autoSizeTextType"),
+        )
+    }
+
     /** 单测的工作目录是 `app/`，与 `PureKotlinBoundaryTest` 用的是同一个前提。 */
     private fun document(name: String): Document {
         val file = File("src/main/res/layout/$name")
@@ -73,6 +103,10 @@ class PracticeLayoutConstraintTest {
     /** 不带命名空间解析，所以属性名照写 `android:layout_height` 即可。 */
     private fun androidAttr(element: Element, name: String): String =
         element.getAttribute("android:$name")
+
+    /** res-auto 命名空间：autosize 这几个属性只能用 `app:` 前缀（`android:` 版本要 API 26）。 */
+    private fun appAttr(element: Element, name: String): String =
+        element.getAttribute("app:$name")
 
     private fun findById(node: Node, id: String): Element? {
         if (node is Element && node.getAttribute("android:id") == "@+id/$id") return node

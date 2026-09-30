@@ -49,7 +49,8 @@ ksp {
     arg("room.schemaLocation", "$projectDir/schemas")
 }
 
-// PracticeLayoutConstraintTest 直接读 src/main/res/layout 下的 XML 做断言（画布铁律）。
+// PracticeLayoutConstraintTest 直接读 src/main/res/layout 下的 XML 做断言（画布铁律，
+// 以及题面的单行 + 自动缩字号规则）。
 // 但 res 并**不是**单元测试任务的输入 —— 不显式声明的话，改完布局再跑 ./gradlew test 会直接
 // UP-TO-DATE 跳过，那条测试就永远停在旧结论上，等于没有。声明成输入后，改布局就会重跑。
 tasks.withType<Test>().configureEach {

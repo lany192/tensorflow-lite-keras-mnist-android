@@ -32,6 +32,8 @@
 - 数学练习（`MathPracticeActivity` + `MathProblem.kt` + `MathProblemGenerator.kt`）建立在识别链路**之上**，不会修改识别链路。`MathProblemGenerator.kt` 与 `InkSegmenter.kt` 遵守同一条硬边界：纯 Kotlin，**文件中任何位置都不得导入 `android.*`**，由 JVM 单元测试覆盖（`MathProblemGeneratorTest.kt`）。在这里加入 Android import 会静默破坏 `./gradlew test`。
 - **生成的答案仍然是 1..9999 的整数。** 识别现在已经支持小数点（`Problem.answer` 仍是 `Int`；`68.0` 会按数值判定为 68），但如果要支持小数答案，必须同时修改出题器、跨页 extras、Room schema 和迁移，不能只改其中一部分。4 位上限来自限制 `MAX_DIGITS` 的“笔画宽 / 数字高”比例。整数答案约束由 `MathProblemGeneratorTest` 断言固定，其中包括五六年级的三个数学折中方案。修改任何出题规则前，先阅读这些测试。
 - 答案 0 被刻意排除——画布上单独的 “0” 是闭合环，在某些切分路径上很难与“什么都没写”区分。
+- **二年级及以上有组合运算题（两个运算符），三年级及以上有带小括号的组合运算。** 题面按小学的运算顺序求值：先乘除后加减，`的` 与乘除同级，小括号优先；这条语义由 `MathProblemGeneratorTest` 里一个**不复用生成器代码**的递归下降求值器独立验算，两边不得各持一套解释。两道容易看不见的坑：(1) `4 × 5 + 3` 从左到右算与按优先级算**同解**，只有 `3 + 4 × 5` 才真的考察运算顺序，所以加减项必须有一半概率写在前面；(2) 加减项不能比乘除部分还大，否则 `81 ÷ 9 + 87` 里学生只练到了加法。新题型一律**追加在 `makersFor` 列表末尾**——插在中间会让既有题型的轮转次数整体错位。
+- **题面控件 `textExpression` 必须保持单行**（布局上的 `maxLines=1` + `app:autoSize*`，字号上下限在 `dimens.xml`）。组合运算题面（`(320 - 160) ÷ 8 = ?`）按 40sp 排在窄屏或大字号下会折成两行，把 `weight=1` 的画布挤矮。autosize 属性**必须写在布局上**：写进 `styles.xml` 依赖 AppCompat 的样式解析路径，一旦不生效，`maxLines=1` 会把长题面直接裁掉，而界面不会报任何错。`PracticeLayoutConstraintTest` 把这条钉住，`src/main/res/layout` 已声明为单测任务输入。
 - `FingerPaintView.inputEnabled` 是冻结画布的唯一方式。`setEnabled(false)` 在这里不起作用：该 View 无条件覆写了 `onTouchEvent`，并且始终返回 true。
 - `FingerPaintView.clear()` 必须保持空安全。`drawingBitmap` 在 `onSizeChanged` 中创建，因此在首次布局前清空画布——`MathPracticeActivity.onCreate` 会这样做以展示新题——会命中空 bitmap 并导致应用崩溃。清空尚未布局的画布是合法操作；只是此时还没有 bitmap 需要重建。
 - 练习画布周围任何在 `GONE` 和 `VISIBLE` 之间切换的控件都会改变画布尺寸：画布占用 `weight=1`，`onSizeChanged` 会重建 `drawingBitmap`，从而静默擦掉学生刚写的内容——他们会认为“提交吃掉了我的答案”。检查提示使用 `INVISIBLE` 来保留其行高。新增的任何同级控件也要做同样处理，或者预留固定高度。
